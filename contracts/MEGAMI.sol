@@ -2,16 +2,17 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./Extension/Royalty.sol";
 
-contract MEGAMI is ERC721, ERC721Enumerable, HasSecondarySaleFees, Ownable {
+contract MEGAMI is ERC721, HasSecondarySaleFees, Ownable {
     using Strings for uint256;
 
     uint256 private _maxSupply = 10000;
     uint256 private _royalty = 1000;
     address private _saleContractAddr;
+
+    uint256 public totalSupply = 0;
 
     string private constant _baseTokenURI = "ipfs://xxxxx/";
 
@@ -42,15 +43,17 @@ contract MEGAMI is ERC721, ERC721Enumerable, HasSecondarySaleFees, Ownable {
     function _beforeTokenTransfer(address from, address to, uint256 tokenId)
         internal
         virtual
-        override(ERC721, ERC721Enumerable)
+        override(ERC721)
     {
         super._beforeTokenTransfer(from, to, tokenId);
     }
 
     function mint(uint256 _tokenId, address _address) public onlyOwnerORSaleContract { 
-        require(totalSupply() <= _maxSupply, "minting limit");
+        require(totalSupply <= _maxSupply, "minting limit");
 
         _safeMint(_address, _tokenId);
+
+        totalSupply += 1;
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
@@ -78,7 +81,7 @@ contract MEGAMI is ERC721, ERC721Enumerable, HasSecondarySaleFees, Ownable {
         public
         view
         virtual
-        override(ERC721, ERC721Enumerable, HasSecondarySaleFees)
+        override(ERC721, HasSecondarySaleFees)
         returns (bool)
     {
         return interfaceId == type(IHasSecondarySaleFees).interfaceId || super.supportsInterface(interfaceId);

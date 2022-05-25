@@ -2,4 +2,6 @@
 .git
 
 artifacts
+
 node_modules
+cache
