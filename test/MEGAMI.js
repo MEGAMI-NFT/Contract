@@ -21,7 +21,7 @@ beforeEach(async function () {
         expect((await megami.totalSupply()).toString()).to.equal("1");
     });  
 
-    // --- Royality tests ---
+    // --- Royalty tests ---
     it("Should change the defaultRoyaltiesReceipientAddress", async function () {
         expect(await megami.defaultRoyaltiesReceipientAddress()).to.equal(megami.address);
         
@@ -40,7 +40,7 @@ beforeEach(async function () {
         expect(await megami.defaultPercentageBasisPoints()).to.equal(1000);
       });   
       
-      it("Should return correct royality through getRaribleV2Royalties", async function () {
+      it("Should return correct royalty through getRaribleV2Royalties", async function () {
         // get royalty through Rarible's interface
         royalty = await megami.getRaribleV2Royalties(1);
     
@@ -48,7 +48,7 @@ beforeEach(async function () {
         expect(royalty[0].account).to.equal(megami.address);
       });   
     
-      it("Should return correct royality through royaltyInfo", async function () {
+      it("Should return correct royalty through royaltyInfo", async function () {
         expect(await megami.defaultPercentageBasisPoints()).to.equal(300);
 
         // get royalty
