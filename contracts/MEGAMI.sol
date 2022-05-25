@@ -2,6 +2,7 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "@openzeppelin/contracts/access/Ownable.sol";
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "./Extension/Royalty.sol";
@@ -89,4 +90,16 @@ contract MEGAMI is ERC721, HasSecondarySaleFees, Ownable, ReentrancyGuard {
     }
 
     receive() external payable {}
+
+    // Copied from ForgottenRunesWarriorsGuild. Thank you dotta ;)
+    /**
+     * @dev ERC20s should not be sent to this contract, but if someone
+     * does, it's nice to be able to recover them
+     * @param token IERC20 the token address
+     * @param amount uint256 the amount to send
+     */
+    function forwardERC20s(IERC20 token, uint256 amount) public onlyOwner {
+        require(address(msg.sender) != address(0));
+        token.transfer(msg.sender, amount);
+    }
 }
