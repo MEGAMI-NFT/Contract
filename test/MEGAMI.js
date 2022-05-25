@@ -66,5 +66,16 @@ beforeEach(async function () {
       it("Should support EIP-2981", async function () {
         // get check supported interface
         expect(await megami.supportsInterface(0x2a55205a)).to.equal(true);  // EIP-2981
-      });      
+      });
+      
+      // Ownership
+      it("renounceOwnership should be NOP", async function () {
+        expect((await megami.owner()).toString()).to.equal(owner.address);
+
+        // try to discard ownership
+        await megami.renounceOwnership();
+
+        // owner shound't be changed
+        expect((await megami.owner()).toString()).to.equal(owner.address);
+      });     
 });
