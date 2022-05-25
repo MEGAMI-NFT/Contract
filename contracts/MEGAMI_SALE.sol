@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "./MEGAMI.sol";
 
 contract MEGAMI_Sale is Ownable {
     using ECDSA for bytes32;
@@ -20,7 +21,7 @@ contract MEGAMI_Sale is Ownable {
     uint256 public DA_FINAL_PRICE;
 
     //Starting at 2 ether
-    uint256 public DA_STARTING_PRICE = 0.5 ether; //change before commit
+    uint256 public DA_STARTING_PRICE = 0.5 ether;
 
     //Ending at 0.1 ether
     uint256 public DA_ENDING_PRICE = 0.1 ether;
@@ -38,6 +39,7 @@ contract MEGAMI_Sale is Ownable {
     uint256 public WAVE_TOTAL_MINT_RANGE = 10000;
     uint256 private WAVE_MINT_RANGE = WAVE_TOTAL_MINT_RANGE / TOTAL_WAVE;
 
+    MEGAMI public MEGAMI_TOKEN;
 
     //ML signer for verification
     address private mlSigner;
@@ -52,7 +54,9 @@ contract MEGAMI_Sale is Ownable {
         _;
     }
 
-    constructor(){}
+    constructor(address MEGAMIContractAddress){
+        MEGAMI_TOKEN = MEGAMI(payable(MEGAMIContractAddress));
+    }
 
     function currentPrice() public view returns (uint256) {
         require(
@@ -119,7 +123,7 @@ contract MEGAMI_Sale is Ownable {
         userToTokenBatchPriceData[msg.sender].push(uint128(msg.value));
         userToHasMintedPublicML[msg.sender] = true;
 
-        // _safeMint(tokenId, msg.sender);
+        MEGAMI_TOKEN.mint(tokenId, msg.sender);
     }
 
     function setStart(uint256 startTime, uint16 wave) public onlyOwner {
