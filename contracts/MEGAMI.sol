@@ -3,9 +3,10 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "./Extension/Royalty.sol";
 
-contract MEGAMI is ERC721, HasSecondarySaleFees, Ownable {
+contract MEGAMI is ERC721, HasSecondarySaleFees, Ownable, ReentrancyGuard {
     using Strings for uint256;
 
     uint256 private _maxSupply = 10000;
@@ -48,7 +49,7 @@ contract MEGAMI is ERC721, HasSecondarySaleFees, Ownable {
         super._beforeTokenTransfer(from, to, tokenId);
     }
 
-    function mint(uint256 _tokenId, address _address) public onlyOwnerORSaleContract { 
+    function mint(uint256 _tokenId, address _address) public onlyOwnerORSaleContract nonReentrant { 
         require(totalSupply <= _maxSupply, "minting limit");
 
         _safeMint(_address, _tokenId);
