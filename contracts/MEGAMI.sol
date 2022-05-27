@@ -5,9 +5,11 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "@openzeppelin/contracts/access/Ownable.sol";
 import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
-import "./Extension/Royalty.sol";
+import "./rarible/royalties/contracts/LibPart.sol";
+import "./rarible/royalties/contracts/LibRoyaltiesV2.sol";
+import "./rarible/royalties/contracts/RoyaltiesV2.sol";
 
-contract MEGAMI is ERC721, HasSecondarySaleFees, Ownable, ReentrancyGuard {
+contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     using Strings for uint256;
 
     uint256 private _maxSupply = 10000;
@@ -18,15 +20,15 @@ contract MEGAMI is ERC721, HasSecondarySaleFees, Ownable, ReentrancyGuard {
 
     string private constant _baseTokenURI = "ipfs://xxxxx/";
 
+    // Royality management
+    bytes4 public constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
+    address payable public defaultRoyaltiesReceipientAddress;  // This will be set in the constructor
+    uint96 public defaultPercentageBasisPoints = 300;  // 3%    
+
     constructor ()
     ERC721("MEGAMI", "MEGAMI")
-    HasSecondarySaleFees(new address payable[](0), new uint256[](0))
     {
-        address payable[] memory thisAddressInArray = new address payable[](1);
-        thisAddressInArray[0] = payable(address(this));
-        uint256[] memory royaltyWithTwoDecimals = new uint256[](1);
-        royaltyWithTwoDecimals[0] = _royalty;
-        _setCommonRoyalties(thisAddressInArray, royaltyWithTwoDecimals);
+        defaultRoyaltiesReceipientAddress = payable(address(this));
     }
 
     function setSaleContract(address contractAddr)
@@ -79,16 +81,6 @@ contract MEGAMI is ERC721, HasSecondarySaleFees, Ownable, ReentrancyGuard {
         require(success, "Failed to withdraw");
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC721, HasSecondarySaleFees)
-        returns (bool)
-    {
-        return interfaceId == type(IHasSecondarySaleFees).interfaceId || super.supportsInterface(interfaceId);
-    }
-
     receive() external payable {}
 
     // Copied from ForgottenRunesWarriorsGuild. Thank you dotta ;)
@@ -102,4 +94,49 @@ contract MEGAMI is ERC721, HasSecondarySaleFees, Ownable, ReentrancyGuard {
         require(address(msg.sender) != address(0));
         token.transfer(msg.sender, amount);
     }
+
+    // Royality management
+    /**
+     * @dev set defaultRoyaltiesReceipientAddress
+     * @param _defaultRoyaltiesReceipientAddress address New royality receipient address
+     */
+    function setDefaultRoyaltiesReceipientAddress(address payable _defaultRoyaltiesReceipientAddress) public onlyOwner {
+        defaultRoyaltiesReceipientAddress = _defaultRoyaltiesReceipientAddress;
+    }
+
+    /**
+     * @dev set defaultPercentageBasisPoints
+     * @param _defaultPercentageBasisPoints uint96 New royality percentagy basis points
+     */
+    function setDefaultPercentageBasisPoints(uint96 _defaultPercentageBasisPoints) public onlyOwner {
+        defaultPercentageBasisPoints = _defaultPercentageBasisPoints;
+    }
+
+    /**
+     * @dev return royality for Rarible
+     */
+    function getRaribleV2Royalties(uint256) external view override returns (LibPart.Part[] memory) {
+        LibPart.Part[] memory _royalties = new LibPart.Part[](1);
+        _royalties[0].value = defaultPercentageBasisPoints;
+        _royalties[0].account = defaultRoyaltiesReceipientAddress;
+        return _royalties;
+    }
+
+    /**
+     * @dev return royality in EIP-2981 standard
+     * @param _salePrice uint256 sales price of the token royality is calculated
+     */
+    function royaltyInfo(uint256, uint256 _salePrice) external view returns (address receiver, uint256 royaltyAmount) {
+        return (defaultRoyaltiesReceipientAddress, (_salePrice * defaultPercentageBasisPoints) / 10000);
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721) returns (bool) {
+        if (interfaceId == LibRoyaltiesV2._INTERFACE_ID_ROYALTIES) {
+            return true;
+        }
+        if (interfaceId == _INTERFACE_ID_ERC2981) {
+            return true;
+        }
+        return super.supportsInterface(interfaceId);
+    }      
 }
