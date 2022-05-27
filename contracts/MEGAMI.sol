@@ -138,5 +138,8 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
             return true;
         }
         return super.supportsInterface(interfaceId);
-    }      
+    }
+    
+    // Disable renouncing ownership
+    function renounceOwnership() public override onlyOwner {}      
 }
