@@ -83,6 +83,10 @@ contract MEGAMI_Sale is Ownable {
         return DA_STARTING_PRICE - totalDecrement;
     }
 
+    function getWave(uint256 tokenId) public view returns (uint256) {
+        return tokenId / (WAVE_TOTAL_MINT_RANGE / TOTAL_WAVE);
+    }
+
     function mintDA(bytes calldata signature, uint256 tokenId) public payable callerIsUser {
         require(DA_ACTIVE == true, "DA isnt active");
         
