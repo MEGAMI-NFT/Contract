@@ -17,9 +17,6 @@ contract MEGAMI_Sale is Ownable {
     uint256 public DA_STARTING_TIMESTAMP;
     uint256 public DA_ENDING_TIMESTAMP;
 
-    //The final auction price.
-    uint256 public DA_FINAL_PRICE;
-
     //Starting at 2 ether
     uint256 public DA_STARTING_PRICE = 0.5 ether;
 
@@ -46,9 +43,6 @@ contract MEGAMI_Sale is Ownable {
 
     mapping(address => bool) public userToHasMintedPublicML;
 
-    //Token to token price data
-    mapping(address => uint128[]) public userToTokenBatchPriceData;
-
     modifier callerIsUser() {
         require(tx.origin == msg.sender, "The caller is another contract");
         _;
@@ -68,7 +62,6 @@ contract MEGAMI_Sale is Ownable {
             "DA has not started!"
         );
 
-        if (DA_FINAL_PRICE > 0) return DA_FINAL_PRICE;
         //Seconds since we started
         uint256 timeSinceStart = currentTimestamp - waveDAStartedTimestamp;
 
@@ -89,10 +82,6 @@ contract MEGAMI_Sale is Ownable {
 
     function getWave(uint256 tokenId) public view returns (uint256) {
         return tokenId / (WAVE_TOTAL_MINT_RANGE / TOTAL_WAVE);
-    }
-
-    function getLatestWave() public view returns (uint256) {
-        return (block.timestamp - DA_STARTING_TIMESTAMP) / WAVE_TIME_INTERVAL;
     }
 
     function mintDA(bytes calldata signature, uint256 tokenId) public payable callerIsUser {
@@ -129,10 +118,8 @@ contract MEGAMI_Sale is Ownable {
 
         // WAVE Requires
         require(tokenId <= WAVE_TOTAL_MINT_RANGE, "total mint limit");
-        //require(tokenId > WAVE_MINT_RANGE * (WAVE - 1), "wave mint yet");
-        //require(tokenId <= WAVE_MINT_RANGE * WAVE, "wave mint limit");
+        require(getWave(tokenId) <= (block.timestamp - DA_STARTING_TIMESTAMP) / WAVE_TIME_INTERVAL, "wave mint yet");
 
-        userToTokenBatchPriceData[msg.sender].push(uint128(msg.value));
         userToHasMintedPublicML[msg.sender] = true;
 
         MEGAMI_TOKEN.mint(tokenId, msg.sender);
