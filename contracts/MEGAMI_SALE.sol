@@ -24,7 +24,7 @@ contract MEGAMI_Sale is Ownable {
     uint256 public DA_STARTING_PRICE_GENERATED = 0.2 ether;
 
     // Lowest price of DA
-    uint256 public DA_ENDING_PRICE = 0.08 ether;
+    uint256 public DA_LOWEST_PRICE = 0.08 ether;
 
     // Decrease amount every frequency. (Reaches the lowest price after 24 hours)
     uint256 public DA_DECREMENT_ORIGIN    = 0.21 ether; 
@@ -72,16 +72,31 @@ contract MEGAMI_Sale is Ownable {
         //How many decrements should've happened since that time
         uint256 decrementsSinceStart = timeSinceStart / DA_DECREMENT_FREQUENCY;
 
-        //How much eth to remove
-        uint256 totalDecrement = decrementsSinceStart * DA_DECREMENT_GENERATED;
+        // Check the type of Megami and setting staring price and price drop
+        uint256 startingPrice = DA_STARTING_PRICE_GENERATED;
+        uint256 priceDecrement = DA_DECREMENT_GENERATED;
+        if(tokenId % SUPPLY_PER_WAVE <= 2 + getNumberOfAlters(wave)) { // Origin is always 3 (0,1,2)
+            if(tokenId % SUPPLY_PER_WAVE <= 2) {
+                // Origin
+                startingPrice = DA_STARTING_PRICE_ORIGIN;
+                priceDecrement = DA_DECREMENT_ORIGIN;
+            } else {
+                // Alter
+                startingPrice = DA_STARTING_PRICE_ALTER;
+                priceDecrement = DA_DECREMENT_ALTER;
+            }
+        }
+
+        // How much eth to remove
+        uint256 totalDecrement = decrementsSinceStart * priceDecrement;
 
         //If how much we want to reduce is greater or equal to the range, return the lowest value
-        if (totalDecrement >= DA_STARTING_PRICE_GENERATED - DA_ENDING_PRICE) {
-            return DA_ENDING_PRICE;
+        if (totalDecrement >= startingPrice - DA_LOWEST_PRICE) {
+            return DA_LOWEST_PRICE;
         }
 
         //If not, return the starting price minus the decrement.
-        return DA_STARTING_PRICE_GENERATED - totalDecrement;
+        return startingPrice - totalDecrement;
     }
 
     function getWave(uint256 tokenId) public view returns (uint256) {
@@ -141,5 +156,13 @@ contract MEGAMI_Sale is Ownable {
 
     function setDutchActionActive(bool daActive) public onlyOwner {
         DA_ACTIVE = daActive;
+    }
+
+    function getNumberOfAlters(uint256 wave) private pure returns (uint256) {
+        // Since there are 24 alters, we need to release an extra in 4 waves
+        if(wave >= 4 && wave <= 7) {
+            return 3;
+        }
+        return 2;
     }
 }
