@@ -15,29 +15,30 @@ contract MEGAMI_Sale is Ownable {
 
     //Starting DA time (seconds). To convert into readable time https://www.unixtimestamp.com/
     uint256 public DA_STARTING_TIMESTAMP;
+    uint256 public DA_LENGTH = 48 * 60 * 60; // DA finishes after 48 hours
     uint256 public DA_ENDING_TIMESTAMP;
 
-    //The final auction price.
-    uint256 public DA_FINAL_PRICE;
+    // Starting price of DA
+    uint256 public DA_STARTING_PRICE_ORIGIN    = 10 ether;
+    uint256 public DA_STARTING_PRICE_ALTER     = 5 ether;
+    uint256 public DA_STARTING_PRICE_GENERATED = 0.2 ether;
 
-    //Starting at 2 ether
-    uint256 public DA_STARTING_PRICE = 0.5 ether;
+    // Lowest price of DA
+    uint256 public DA_ENDING_PRICE = 0.08 ether;
 
-    //Ending at 0.1 ether
-    uint256 public DA_ENDING_PRICE = 0.1 ether;
+    // Decrease amount every frequency. (Reaches the lowest price after 24 hours)
+    uint256 public DA_DECREMENT_ORIGIN    = 0.21 ether; 
+    uint256 public DA_DECREMENT_ALTER     = 0.1025 ether;
+    uint256 public DA_DECREMENT_GENERATED = 0.0025 ether;
 
-    //Decrease by 0.05 every frequency.
-    uint256 public DA_DECREMENT = 0.05 ether;
+    // Decrement price every 1800 seconds (30 minutes).
+    uint256 public DA_DECREMENT_FREQUENCY = 30 * 60;
 
-    //decrement price every 300 seconds (5 minutes).
-    uint256 public DA_DECREMENT_FREQUENCY = 300;
-
-    //Wave
-    uint16 public WAVE = 1;
-    uint256 public WAVE_TIME_RANGE = 60 * 60 * 2; // 2 hour
+    // Wave management
     uint256 public TOTAL_WAVE = 10;
-    uint256 public WAVE_TOTAL_MINT_RANGE = 10000;
-    uint256 private WAVE_MINT_RANGE = WAVE_TOTAL_MINT_RANGE / TOTAL_WAVE;
+    uint256 public TOTAL_SUPPLY = 10000;
+    uint256 public WAVE_TIME_INTERVAL = 60 * 60 * 1; // Relese new wave every 1 hour
+    uint256 private SUPPLY_PER_WAVE = TOTAL_SUPPLY / TOTAL_WAVE;
 
     MEGAMI public MEGAMI_TOKEN;
 
@@ -45,9 +46,6 @@ contract MEGAMI_Sale is Ownable {
     address private mlSigner;
 
     mapping(address => bool) public userToHasMintedPublicML;
-
-    //Token to token price data
-    mapping(address => uint128[]) public userToTokenBatchPriceData;
 
     modifier callerIsUser() {
         require(tx.origin == msg.sender, "The caller is another contract");
@@ -58,29 +56,36 @@ contract MEGAMI_Sale is Ownable {
         MEGAMI_TOKEN = MEGAMI(payable(MEGAMIContractAddress));
     }
 
-    function currentPrice() public view returns (uint256) {
+    function currentPrice(uint256 tokenId) public view returns (uint256) {
+        uint256 currentTimestamp = block.timestamp;
+        uint256 wave = getWave(tokenId);
+        uint256 waveDAStartedTimestamp = DA_STARTING_TIMESTAMP + (WAVE_TIME_INTERVAL * wave);
+
         require(
-            block.timestamp >= DA_STARTING_TIMESTAMP,
+            currentTimestamp >= waveDAStartedTimestamp,
             "DA has not started!"
         );
 
-        if (DA_FINAL_PRICE > 0) return DA_FINAL_PRICE;
         //Seconds since we started
-        uint256 timeSinceStart = block.timestamp - DA_STARTING_TIMESTAMP;
+        uint256 timeSinceStart = currentTimestamp - waveDAStartedTimestamp;
 
         //How many decrements should've happened since that time
         uint256 decrementsSinceStart = timeSinceStart / DA_DECREMENT_FREQUENCY;
 
         //How much eth to remove
-        uint256 totalDecrement = decrementsSinceStart * DA_DECREMENT;
+        uint256 totalDecrement = decrementsSinceStart * DA_DECREMENT_GENERATED;
 
         //If how much we want to reduce is greater or equal to the range, return the lowest value
-        if (totalDecrement >= DA_STARTING_PRICE - DA_ENDING_PRICE) {
+        if (totalDecrement >= DA_STARTING_PRICE_GENERATED - DA_ENDING_PRICE) {
             return DA_ENDING_PRICE;
         }
 
         //If not, return the starting price minus the decrement.
-        return DA_STARTING_PRICE - totalDecrement;
+        return DA_STARTING_PRICE_GENERATED - totalDecrement;
+    }
+
+    function getWave(uint256 tokenId) public view returns (uint256) {
+        return tokenId / SUPPLY_PER_WAVE;
     }
 
     function mintDA(bytes calldata signature, uint256 tokenId) public payable callerIsUser {
@@ -94,7 +99,7 @@ contract MEGAMI_Sale is Ownable {
 
         require(block.timestamp <= DA_ENDING_TIMESTAMP, "DA is finished");
 
-        uint256 _currentPrice = currentPrice();
+        uint256 _currentPrice = currentPrice(tokenId);
 
         require(msg.value >= _currentPrice, "Did not send enough eth.");
 
@@ -116,20 +121,17 @@ contract MEGAMI_Sale is Ownable {
         );
 
         // WAVE Requires
-        require(tokenId <= WAVE_TOTAL_MINT_RANGE, "total mint limit");
-        require(tokenId > WAVE_MINT_RANGE * (WAVE - 1), "wave mint yet");
-        require(tokenId <= WAVE_MINT_RANGE * WAVE, "wave mint limit");
+        require(tokenId <= TOTAL_SUPPLY, "total mint limit");
+        require(getWave(tokenId) <= (block.timestamp - DA_STARTING_TIMESTAMP) / WAVE_TIME_INTERVAL, "wave mint yet");
 
-        userToTokenBatchPriceData[msg.sender].push(uint128(msg.value));
         userToHasMintedPublicML[msg.sender] = true;
 
         MEGAMI_TOKEN.mint(tokenId, msg.sender);
     }
 
-    function setStart(uint256 startTime, uint16 wave) public onlyOwner {
+    function setStart(uint256 startTime) public onlyOwner {
         DA_STARTING_TIMESTAMP = startTime;
-        DA_ENDING_TIMESTAMP = DA_STARTING_TIMESTAMP + WAVE_TIME_RANGE; 
-        WAVE = wave;
+        DA_ENDING_TIMESTAMP = DA_STARTING_TIMESTAMP + DA_LENGTH;
     }
 
     //VARIABLES THAT NEED TO BE SET BEFORE MINT(pls remove comment when uploading to mainet)
