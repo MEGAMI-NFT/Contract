@@ -45,7 +45,7 @@ contract MEGAMI_Sale is Ownable {
     //ML signer for verification
     address private mlSigner;
 
-    mapping(address => bool) public userToHasMintedPublicML;
+    mapping(address => uint256) public userToUsedMLs;
 
     modifier callerIsUser() {
         require(tx.origin == msg.sender, "The caller is another contract");
@@ -103,7 +103,7 @@ contract MEGAMI_Sale is Ownable {
         return tokenId / SUPPLY_PER_WAVE;
     }
 
-    function mintDA(bytes calldata signature, uint256 tokenId) public payable callerIsUser {
+    function mintDA(bytes calldata signature, uint8 mlSpots, uint256 tokenId) public payable callerIsUser {
         require(DA_ACTIVE == true, "DA isnt active");
         
         //Require DA started
@@ -118,28 +118,32 @@ contract MEGAMI_Sale is Ownable {
 
         require(msg.value >= _currentPrice, "Did not send enough eth.");
 
-        require(
-            !userToHasMintedPublicML[msg.sender],
-            "Can only mint once during public ML!"
-        );
-
+        // 1 byte shifted address + number of MLs
+        uint256 message = uint256(uint160(msg.sender)) * 2 ** 8 + mlSpots;
         
         require(
             mlSigner ==
                 keccak256(
                     abi.encodePacked(
                         "\x19Ethereum Signed Message:\n32",
-                        bytes32(uint256(uint160(msg.sender)))
+                        bytes32(message)
                     )
                 ).recover(signature),
             "Signer address mismatch."
+        );
+
+        // Check number of ML spots
+        require(
+            userToUsedMLs[msg.sender] < mlSpots,
+            "All ML spots have been consumed"
         );
 
         // WAVE Requires
         require(tokenId <= TOTAL_SUPPLY, "total mint limit");
         require(getWave(tokenId) <= (block.timestamp - DA_STARTING_TIMESTAMP) / WAVE_TIME_INTERVAL, "wave mint yet");
 
-        userToHasMintedPublicML[msg.sender] = true;
+        // Increment used ML spots
+        userToUsedMLs[msg.sender] += 1;
 
         MEGAMI_TOKEN.mint(tokenId, msg.sender);
     }
@@ -150,7 +154,7 @@ contract MEGAMI_Sale is Ownable {
     }
 
     //VARIABLES THAT NEED TO BE SET BEFORE MINT(pls remove comment when uploading to mainet)
-    function setSigners(address signer) external onlyOwner {
+    function setSigner(address signer) external onlyOwner {
         mlSigner = signer;
     }
 
