@@ -1,11 +1,35 @@
+const { AddressZero } = require('@ethersproject/constants');
 const { parseEther } = require('@ethersproject/units');
 const { expect } = require("chai");
 const { waffle } = require("hardhat");
+const Web3 = require('web3');
+const web3 = new Web3(Web3.givenProvider);
+
 const provider = waffle.provider;
+
+// Test only wallet
+const SIGNER_ADDRESS = "0x9A1D4e1150759DB4B2d02aC3c08335a2Ac9418fe";
+const SIGNER_SECRETKEY = "0cddb0e8ba05a84e45c5081775cee5eaff59aecf9e3f7c1e775d4419189d1590";
+const signer = web3.eth.accounts.privateKeyToAccount(SIGNER_SECRETKEY);
+
 
 async function setupMegami() {
     const contractFactory = await ethers.getContractFactory('MEGAMI');
     return await contractFactory.deploy();
+}
+
+async function generateSignature(address, num_of_ml) {
+    // Construct message to sign.
+    hex = num_of_ml.toString(16);
+    if (hex.length < 2) {
+        hex = "0" + hex;
+    }
+    let message = `0x0000000000000000000000${address.substring(2)}${hex}`;
+
+    // Sign the message, update the `signedMessages` dict
+    // storing only the `signature` value returned from .sign()
+    let { signature } = signer.sign(message);
+    return signature;
 }
 
 describe("MEGAMI_Sale", function () {
@@ -13,7 +37,7 @@ describe("MEGAMI_Sale", function () {
     let megamiContract;
 
     beforeEach(async function () {
-        [owner, seller, other] = await ethers.getSigners();
+        [owner, minter, other] = await ethers.getSigners();
 
         // Setup Megami
         const MegamiFactory = await ethers.getContractFactory('MEGAMI');
@@ -21,6 +45,9 @@ describe("MEGAMI_Sale", function () {
 
         const MegamiSaleFactory = await hre.ethers.getContractFactory("MEGAMI_Sale");
         auction = await MegamiSaleFactory.deploy(megamiContract.address);
+
+        // Setup Megami Sale as a SaleContract
+        await megamiContract.setSaleContract(auction.address);
     });
 
     it("default DA_ACTIVE should be false", async function () {
@@ -88,7 +115,7 @@ describe("MEGAMI_Sale", function () {
         ]
 
         for(i = 0; i < cases.length; i++ ) {
-            // DA started 1 sec 
+            // DA started 1 sec
             await auction.setStart(now - 1 - (60 * 60 * cases[i][0]));
             
             // Start Price
@@ -246,5 +273,79 @@ describe("MEGAMI_Sale", function () {
                 await expect(auction.currentPrice(cases[i][0])).to.be.revertedWith("DA has not started!");
             }
         };
-    });  
+    });
+
+    // --- mintDA --
+    it("should be able to mint", async function () {
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 1 sec 
+        await auction.setStart(now - 1);
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        // Mint token ID 10 with 1 mintlist spot
+        const signature = await generateSignature(minter.address, 1);
+        const tx = auction.connect(minter).mintDA(signature, 1, 10, {value: parseEther('0.2')});
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
+    });
+
+    it("DA mint should fail because of wrong address", async function () {
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 1 sec 
+        await auction.setStart(now - 1);
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        // Mint token ID 10 with 1 mintlist spot
+        const signature = await generateSignature(minter.address, 1);
+        await expect(auction.connect(other).mintDA(signature, 1, 10, {value: parseEther('0.2')})).to.be.revertedWith("Signer address mismatch.");
+    });
+
+    it("DA mint should fail because of wrong ml spots", async function () {
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 1 sec 
+        await auction.setStart(now - 1);
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        // Mint token ID 10 with 1 mintlist spot
+        const signature = await generateSignature(minter.address, 1);
+        await expect(auction.connect(minter).mintDA(signature, 2, 10, {value: parseEther('0.2')})).to.be.revertedWith("Signer address mismatch.");
+    });
+
+    it("should not be able to mint more than ml spots", async function () {
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 1 sec 
+        await auction.setStart(now - 1);
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        // Mint token ID 10 with 1 mintlist spot
+        const signature = await generateSignature(minter.address, 1);
+        const tx = auction.connect(minter).mintDA(signature, 1, 10, {value: parseEther('0.2')});
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
+
+        // Try to mint one more
+        await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("All ML spots have been consumed");
+    });
 });
