@@ -12,6 +12,10 @@ contract MEGAMI_Sale is Ownable {
 
     //DA active variable
     bool public DA_ACTIVE = false; 
+    
+    //Public sale flag
+    bool public PUBLIC_SALE = false;
+    uint256 public PUBLIC_SALE_PRICE = 0.1 ether;
 
     //Starting DA time (seconds). To convert into readable time https://www.unixtimestamp.com/
     uint256 public DA_STARTING_TIMESTAMP;
@@ -46,6 +50,8 @@ contract MEGAMI_Sale is Ownable {
     address private mlSigner;
 
     mapping(address => uint256) public userToUsedMLs;
+
+    mapping(uint256 => bool) public tokenCollect;
 
     modifier callerIsUser() {
         require(tx.origin == msg.sender, "The caller is another contract");
@@ -145,6 +151,25 @@ contract MEGAMI_Sale is Ownable {
         // Increment used ML spots
         userToUsedMLs[msg.sender] += 1;
 
+        // already mint token check
+        require(!tokenCollect[tokenId], "already minted");
+
+        userToHasMintedPublicML[msg.sender] = true;
+        
+        tokenCollect[tokenId] = true;
+
+        MEGAMI_TOKEN.mint(tokenId, msg.sender);
+    }
+
+    function public_mint(uint256 tokenId) public payable callerIsUser {
+        require(PUBLIC_SALE, "Public sale isnt active");
+        require(msg.value >= PUBLIC_SALE_PRICE, "Did not send enough eth.");
+
+        // already mint token check
+        require(!tokenCollect[tokenId], "already minted");
+
+        tokenCollect[tokenId] = true;
+
         MEGAMI_TOKEN.mint(tokenId, msg.sender);
     }
 
@@ -162,6 +187,10 @@ contract MEGAMI_Sale is Ownable {
         DA_ACTIVE = daActive;
     }
 
+    function setPublicSaleActive(bool publicActive) public onlyOwner {
+        PUBLIC_SALE = publicActive;
+    }
+    
     function getNumberOfAlters(uint256 wave) private pure returns (uint256) {
         // Since there are 24 alters, we need to release an extra in 4 waves
         if(wave >= 4 && wave <= 7) {
