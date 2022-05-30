@@ -98,4 +98,5 @@ beforeEach(async function () {
         // owner shound't be changed
         expect((await megami.owner()).toString()).to.equal(owner.address);
       });     
+    });
 });
