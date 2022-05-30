@@ -51,9 +51,6 @@ contract MEGAMI_Sale is Ownable {
 
     mapping(address => bool) public userToHasMintedPublicML;
 
-    //Token to token price data
-    mapping(address => uint128[]) public userToTokenBatchPriceData;
-
     mapping(uint256 => bool) public tokenCollect;
 
     modifier callerIsUser() {
@@ -152,8 +149,6 @@ contract MEGAMI_Sale is Ownable {
         // already mint token check
         require(!tokenCollect[tokenId], "already minted");
 
-        userToTokenBatchPriceData[msg.sender].push(uint128(msg.value));
-
         userToHasMintedPublicML[msg.sender] = true;
         
         tokenCollect[tokenId] = true;
@@ -187,8 +182,8 @@ contract MEGAMI_Sale is Ownable {
         DA_ACTIVE = daActive;
     }
 
-    function setPublicSaleActive(bool daActive) public onlyOwner {
-        PUBLIC_SALE = daActive;
+    function setPublicSaleActive(bool publicActive) public onlyOwner {
+        PUBLIC_SALE = publicActive;
     }
     
     function getNumberOfAlters(uint256 wave) private pure returns (uint256) {
