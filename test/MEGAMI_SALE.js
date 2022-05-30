@@ -20,7 +20,11 @@ async function setupMegami() {
 
 async function generateSignature(address, num_of_ml) {
     // Construct message to sign.
-    let message = `0x0000000000000000000000${address.substring(2)}${num_of_ml.toString(16)}`;
+    hex = num_of_ml.toString(16);
+    if (hex.length < 2) {
+        hex = "0" + hex;
+    }
+    let message = `0x0000000000000000000000${address.substring(2)}${hex}`;
 
     // Sign the message, update the `signedMessages` dict
     // storing only the `signature` value returned from .sign()
