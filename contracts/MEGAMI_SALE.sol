@@ -12,6 +12,10 @@ contract MEGAMI_Sale is Ownable {
 
     //DA active variable
     bool public DA_ACTIVE = false; 
+    
+    //Public sale flag
+    bool public PUBLIC_SALE = false;
+    uint256 public PUBLIC_SALE_PRICE = 0.1 ether;
 
     //Starting DA time (seconds). To convert into readable time https://www.unixtimestamp.com/
     uint256 public DA_STARTING_TIMESTAMP;
@@ -48,6 +52,8 @@ contract MEGAMI_Sale is Ownable {
 
     //Token to token price data
     mapping(address => uint128[]) public userToTokenBatchPriceData;
+
+    mapping(uint256 => bool) public tokenCollect;
 
     modifier callerIsUser() {
         require(tx.origin == msg.sender, "The caller is another contract");
@@ -120,8 +126,25 @@ contract MEGAMI_Sale is Ownable {
         require(tokenId > WAVE_MINT_RANGE * (WAVE - 1), "wave mint yet");
         require(tokenId <= WAVE_MINT_RANGE * WAVE, "wave mint limit");
 
+        // already mint token check
+        require(!tokenCollect[tokenId], "already minted");
+
         userToTokenBatchPriceData[msg.sender].push(uint128(msg.value));
         userToHasMintedPublicML[msg.sender] = true;
+        
+        tokenCollect[tokenId] = true;
+
+        MEGAMI_TOKEN.mint(tokenId, msg.sender);
+    }
+
+    function public_mint(uint256 tokenId) public payable callerIsUser {
+        require(PUBLIC_SALE, "Public sale isnt active");
+        require(msg.value >= PUBLIC_SALE_PRICE, "Did not send enough eth.");
+
+        // already mint token check
+        require(!tokenCollect[tokenId], "already minted");
+
+        tokenCollect[tokenId] = true;
 
         MEGAMI_TOKEN.mint(tokenId, msg.sender);
     }
@@ -139,5 +162,9 @@ contract MEGAMI_Sale is Ownable {
 
     function setDutchActionActive(bool daActive) public onlyOwner {
         DA_ACTIVE = daActive;
+    }
+
+    function setPublicSaleActive(bool daActive) public onlyOwner {
+        PUBLIC_SALE = daActive;
     }
 }
