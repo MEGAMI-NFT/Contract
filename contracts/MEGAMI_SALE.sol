@@ -154,8 +154,6 @@ contract MEGAMI_Sale is Ownable {
         // already mint token check
         require(!tokenCollect[tokenId], "already minted");
 
-        userToHasMintedPublicML[msg.sender] = true;
-        
         tokenCollect[tokenId] = true;
 
         MEGAMI_TOKEN.mint(tokenId, msg.sender);
