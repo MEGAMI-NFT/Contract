@@ -159,6 +159,15 @@ contract MEGAMI_Sale is Ownable {
         MEGAMI_TOKEN.mint(tokenId, msg.sender);
     }
 
+    function mintTeam(address recipient, uint256[] calldata tokenIds) external onlyOwner {
+        require(address(recipient) != address(0), 'recipient address is necessary');
+        uint256 count = tokenIds.length;
+        for (uint256 i = 0; i < count;) {
+            MEGAMI_TOKEN.mint(tokenIds[i], recipient);
+            unchecked { ++i; }
+        }
+    }
+
     function setStart(uint256 startTime) public onlyOwner {
         DA_STARTING_TIMESTAMP = startTime;
         DA_ENDING_TIMESTAMP = DA_STARTING_TIMESTAMP + DA_LENGTH;

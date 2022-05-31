@@ -348,4 +348,17 @@ describe("MEGAMI_Sale", function () {
         // Try to mint one more
         await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("All ML spots have been consumed");
     });
+
+    // --- teamMint ---
+    it("should be able to mint multiple tokens though mintTeam", async function () {     
+        // Mint token ID 10, 11, and 15
+        const tx = auction.connect(owner).mintTeam(minter.address, [10, 11, 15]);
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 11);
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 15);
+    });    
+
+    it("non owner should not be able to mint through mintTeam", async function () {     
+        await expect(auction.connect(minter).mintTeam(minter.address, [10, 11, 15])).to.be.revertedWith("Ownable: caller is not the owner");
+    }); 
 });
