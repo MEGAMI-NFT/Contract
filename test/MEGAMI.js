@@ -1,8 +1,9 @@
+const { AddressZero } = require('@ethersproject/constants');
 const { expect } = require("chai");
 
 describe("MEGAMI", function () {
 beforeEach(async function () {
-    [owner, seller, other] = await ethers.getSigners();
+    [owner, seller, minter, other] = await ethers.getSigners();
     const Megami = await hre.ethers.getContractFactory("MEGAMI");
     megami = await Megami.deploy();
 
@@ -21,6 +22,17 @@ beforeEach(async function () {
         expect((await megami.totalSupply()).toString()).to.equal("1");
     });  
 
+    // --- mint tests ---
+    it("Should be able to mint by owner", async function () {
+        expect(await megami.connect(owner).mint(10, minter.address)).to.emit(megami, 'Transfer').withArgs(AddressZero, minter.address, 10);
+    });
+
+    it("Should not be able to mint the same token twice", async function () {
+      expect(await megami.connect(owner).mint(10, minter.address)).to.emit(megami, 'Transfer').withArgs(AddressZero, minter.address, 10);
+
+      await expect(megami.connect(owner).mint(10, minter.address)).to.be.revertedWith("ERC721: token already minted");
+    });
+
     // --- Royalty tests ---
     it("Should change the defaultRoyaltiesReceipientAddress", async function () {
         expect(await megami.defaultRoyaltiesReceipientAddress()).to.equal(megami.address);
@@ -29,7 +41,7 @@ beforeEach(async function () {
         await megami.setDefaultRoyaltiesReceipientAddress(owner.address);
     
         expect(await megami.defaultRoyaltiesReceipientAddress()).to.equal(owner.address);
-      });   
+    });   
 
     it("Should change the defaultPercentageBasisPoints", async function () {
         expect(await megami.defaultPercentageBasisPoints()).to.equal(300);
