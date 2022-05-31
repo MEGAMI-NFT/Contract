@@ -5,3 +5,6 @@ artifacts
 
 node_modules
 cache
+
+coverage.json
+coverage
