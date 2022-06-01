@@ -1,5 +1,5 @@
 const { AddressZero } = require('@ethersproject/constants');
-const { expect } = require("chai");
+const { expect, assert } = require("chai");
 
 describe("MEGAMI", function () {
 beforeEach(async function () {
@@ -31,6 +31,25 @@ beforeEach(async function () {
       expect(await megami.connect(owner).mint(10, minter.address)).to.emit(megami, 'Transfer').withArgs(AddressZero, minter.address, 10);
 
       await expect(megami.connect(owner).mint(10, minter.address)).to.be.revertedWith("ERC721: token already minted");
+    });
+
+    // --- getUnmintedTokenIds tests ---
+    it("Should return unmintedTokenIds", async function() {
+      // Initial remaining tokenIds sould be 10,000
+      expect((await megami.getUnmintedTokenIds())).to.have.lengthOf(10000);
+
+      // Mint token ID 10
+      expect(await megami.connect(owner).mint(10, minter.address)).to.emit(megami, 'Transfer').withArgs(AddressZero, minter.address, 10);
+
+      // Initial remaining tokenIds sould be 9,999
+      const unmintedIds = await megami.getUnmintedTokenIds();
+      expect(unmintedIds).to.have.lengthOf(9999);
+
+      for(i = 0; i < unmintedIds.length; i++ ){
+        if(unmintedIds[i] == 10) {
+          assert.fail();
+        }
+      }
     });
 
     // --- Royalty tests ---

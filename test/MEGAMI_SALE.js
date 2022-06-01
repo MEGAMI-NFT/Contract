@@ -361,4 +361,12 @@ describe("MEGAMI_Sale", function () {
     it("non owner should not be able to mint through mintTeam", async function () {     
         await expect(auction.connect(minter).mintTeam(minter.address, [10, 11, 15])).to.be.revertedWith("Ownable: caller is not the owner");
     }); 
+
+    // --- getUnmintedTokenIds tests ---
+    it("Should return unmintedTokenIds", async function() {
+        // Just do the simple testing here because this function is just calling MEGAMI contract which is tested separately
+        
+        // Initial remaining tokenIds sould be 10,000
+        expect((await megamiContract.getUnmintedTokenIds())).to.have.lengthOf(10000);
+    });
 });
