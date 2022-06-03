@@ -2,12 +2,13 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./MEGAMI.sol";
 
-contract MEGAMI_Sale is Ownable {
+contract MEGAMI_Sale is ReentrancyGuard, Ownable {
     using ECDSA for bytes32;
 
     //DA active variable
@@ -107,7 +108,7 @@ contract MEGAMI_Sale is Ownable {
         return tokenId / SUPPLY_PER_WAVE;
     }
 
-    function mintDA(bytes calldata signature, uint8 mlSpots, uint256 tokenId) public payable callerIsUser {
+    function mintDA(bytes calldata signature, uint8 mlSpots, uint256 tokenId) public payable callerIsUser nonReentrant {
         require(DA_ACTIVE, "DA isnt active");
         
         //Require DA started
@@ -152,7 +153,7 @@ contract MEGAMI_Sale is Ownable {
         MEGAMI_TOKEN.mint(tokenId, msg.sender);
     }
 
-    function public_mint(uint256 tokenId) public payable callerIsUser {
+    function mintPublic(uint256 tokenId) public payable callerIsUser nonReentrant {
         require(PUBLIC_SALE, "Public sale isnt active");
         require(msg.value >= PUBLIC_SALE_PRICE, "Did not send enough eth.");
 
@@ -196,5 +197,17 @@ contract MEGAMI_Sale is Ownable {
             return 3;
         }
         return 2;
+    }
+
+    /**
+     @dev Emergency withdraw. Please use moveFund to megami for regular withdraw
+     */
+    function emergencyWithdraw() external onlyOwner {
+        require(payable(owner()).send(address(this).balance), "failed to withdraw");
+    }
+
+    function moveFund() external onlyOwner {
+        (bool sent, ) = address(MEGAMI_TOKEN).call{value: address(this).balance}("");
+        require(sent, "failed to move fund to MEGAMI contract");
     }
 }

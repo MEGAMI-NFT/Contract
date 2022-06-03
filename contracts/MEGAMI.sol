@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
+import "@openzeppelin/contracts/access/Ownable.sol";
+import '@openzeppelin/contracts/interfaces/IERC2981.sol';
+import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
-import '@openzeppelin/contracts/interfaces/IERC2981.sol';
-import "@openzeppelin/contracts/access/Ownable.sol";
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "./rarible/royalties/contracts/LibPart.sol";
 import "./rarible/royalties/contracts/LibRoyaltiesV2.sol";
 import "./rarible/royalties/contracts/RoyaltiesV2.sol";
@@ -22,9 +22,15 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     string private constant _baseTokenURI = "ipfs://xxxxx/";
 
     // Royality management
-    bytes4 public constant _INTERFACE_ID_ERC2981 = 0x2a55205a;
     address payable public defaultRoyaltiesReceipientAddress;  // This will be set in the constructor
-    uint96 public defaultPercentageBasisPoints = 300;  // 3%    
+    uint96 public defaultPercentageBasisPoints = 300;  // 3%
+
+    // Withdraw management
+    struct feeReceiver { 
+        address payable receiver;
+        uint96 sharePercentageBasisPoints;
+    }
+    feeReceiver[] private _feeReceivers;
 
     constructor ()
     ERC721("MEGAMI", "MEGAMI")
@@ -71,7 +77,7 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
 
     function mint(uint256 _tokenId, address _address) public onlyOwnerORSaleContract nonReentrant { 
         require(totalSupply <= _maxSupply, "minting limit");
-
+        
         _safeMint(_address, _tokenId);
 
         totalSupply += 1;
@@ -81,24 +87,6 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
         return string(abi.encodePacked(_baseTokenURI, tokenId.toString(), ".json"));
     }
-
-    function withdraw() public onlyOwnerORSaleContract {
-        uint256 sendAmount = address(this).balance;
-
-        // 分配については本番までに設定
-        address payer_1 = payable(0x0);
-        address payer_2 = payable(0x0);
-
-        bool success;
-
-        (success, ) = payer_1.call{value: (sendAmount * 1/10)}("");
-        require(success, "Failed to withdraw");
-
-        (success, ) = payer_2.call{value: (sendAmount * 1/10)}("");
-        require(success, "Failed to withdraw");
-    }
-
-    receive() external payable {}
 
     // Copied from ForgottenRunesWarriorsGuild. Thank you dotta ;)
     /**
@@ -158,5 +146,53 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     }
     
     // Disable renouncing ownership
-    function renounceOwnership() public override onlyOwner {}      
+    function renounceOwnership() public override onlyOwner {}     
+
+    // Withdraw 
+    receive() external payable {}
+    fallback() external payable {}
+
+    function setFeeReceivers(feeReceiver[] calldata receivers) external onlyOwner {
+        uint256 receiversLength = receivers.length;
+        require(receiversLength > 0, "at least one receiver is necessary");
+        uint256 totalPercentageBasisPoints = 0;
+        delete _feeReceivers;
+        for(uint256 i = 0; i < receiversLength;) {
+            require(receivers[i].receiver != address(0), "receiver address can't be null");
+            require(receivers[i].sharePercentageBasisPoints != 0, "share percentage basis points can't be 0");
+            _feeReceivers.push(feeReceiver(receivers[i].receiver, receivers[i].sharePercentageBasisPoints));
+
+            totalPercentageBasisPoints += receivers[i].sharePercentageBasisPoints;
+
+            unchecked { ++i; }
+        }
+        require(totalPercentageBasisPoints == 10000, "total share percentage basis point isn't 10000");
+    }
+
+    function withdraw() public onlyOwner {
+        require(_feeReceivers.length != 0, "receivers haven't been specified yet");
+
+        uint256 sendingAmount = address(this).balance;
+        uint256 receiversLength = _feeReceivers.length;
+        uint256 totalSent = 0;
+        if(receiversLength > 1) {
+            for(uint256 i = 1; i < receiversLength;) {
+                uint256 transferAmount = (sendingAmount * _feeReceivers[i].sharePercentageBasisPoints) / 10000;
+                totalSent += transferAmount;
+                require(_feeReceivers[i].receiver.send(transferAmount), "transfer failed");
+
+                unchecked { ++i; }
+            }
+        }
+
+        // Remainder is sent to the first receiver
+        require(_feeReceivers[0].receiver.send(sendingAmount - totalSent), "transfer failed");
+    }
+
+    /**
+     @dev Emergency withdraw. Please use moveFund to megami for regular withdraw
+     */
+    function emergencyWithdraw() public onlyOwner {
+        require(payable(owner()).send(address(this).balance));
+    }
 }
