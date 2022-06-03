@@ -67,7 +67,7 @@ contract MEGAMI_Sale is Ownable {
 
         require(
             currentTimestamp >= waveDAStartedTimestamp,
-            "DA has not started!"
+            "wave mint yet"
         );
 
         //Seconds since we started
@@ -108,20 +108,17 @@ contract MEGAMI_Sale is Ownable {
     }
 
     function mintDA(bytes calldata signature, uint8 mlSpots, uint256 tokenId) public payable callerIsUser {
-        require(DA_ACTIVE == true, "DA isnt active");
+        require(DA_ACTIVE, "DA isnt active");
         
         //Require DA started
         require(
             block.timestamp >= DA_STARTING_TIMESTAMP,
             "DA has not started!"
-        );
+        );        
 
         require(block.timestamp <= DA_ENDING_TIMESTAMP, "DA is finished");
 
-        uint256 _currentPrice = currentPrice(tokenId);
-
-        require(msg.value >= _currentPrice, "Did not send enough eth.");
-
+        // Validate Mintlist
         // 1 byte shifted address + number of MLs
         uint256 message = (uint256(uint160(msg.sender)) << 8) + mlSpots;
         
@@ -142,9 +139,12 @@ contract MEGAMI_Sale is Ownable {
             "All ML spots have been consumed"
         );
 
-        // WAVE Requires
-        require(tokenId <= TOTAL_SUPPLY, "total mint limit");
-        require(getWave(tokenId) <= (block.timestamp - DA_STARTING_TIMESTAMP) / WAVE_TIME_INTERVAL, "wave mint yet");
+        // Validate token ID
+        require(tokenId < TOTAL_SUPPLY, "total mint limit");
+
+        uint256 _currentPrice = currentPrice(tokenId);
+
+        require(msg.value >= _currentPrice, "Did not send enough eth.");
 
         // Increment used ML spots
         userToUsedMLs[msg.sender] += 1;

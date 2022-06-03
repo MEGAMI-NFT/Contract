@@ -49,10 +49,6 @@ describe("MEGAMI_Sale", function () {
         // Setup Megami Sale as a SaleContract
         await megamiContract.setSaleContract(auction.address);
     });
-
-    it("default DA_ACTIVE should be false", async function () {
-        expect(await auction.DA_ACTIVE()).to.equal(false);
-    });  
     
     // --- getWave ---
     it("can get corresponding wave based on tokenId", async function () {
@@ -239,7 +235,7 @@ describe("MEGAMI_Sale", function () {
         await auction.setStart(now + 10); 
 
         // Start Price
-        await expect(auction.currentPrice(10)).to.be.revertedWith("DA has not started!");
+        await expect(auction.currentPrice(10)).to.be.revertedWith("wave mint yet");
     });  
 
     it("DA start time should be managed independently", async function () {
@@ -270,12 +266,16 @@ describe("MEGAMI_Sale", function () {
             if(cases[i][2]) {
                 await expect(auction.currentPrice(cases[i][0])).to.be.not.reverted; 
             } else{
-                await expect(auction.currentPrice(cases[i][0])).to.be.revertedWith("DA has not started!");
+                await expect(auction.currentPrice(cases[i][0])).to.be.revertedWith("wave mint yet");
             }
         };
     });
 
-    // --- mintDA --
+    // --- mintDA ---
+    it("default DA_ACTIVE should be false", async function () {
+        expect(await auction.DA_ACTIVE()).to.equal(false);
+    });      
+
     it("should be able to mint", async function () {
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
@@ -317,7 +317,7 @@ describe("MEGAMI_Sale", function () {
         // Set signer 
         await auction.setSigner(SIGNER_ADDRESS);
 
-        // DA started 1 sec 
+        // DA started 1 sec ago
         await auction.setStart(now - 1);
 
         // Set DA active
@@ -334,7 +334,7 @@ describe("MEGAMI_Sale", function () {
         // Set signer 
         await auction.setSigner(SIGNER_ADDRESS);
 
-        // DA started 1 sec 
+        // DA started 1 sec ago
         await auction.setStart(now - 1);
 
         // Set DA active
@@ -349,6 +349,69 @@ describe("MEGAMI_Sale", function () {
         await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("All ML spots have been consumed");
     });
 
+    it("DA mint should fail if DA_ACTIVE is false", async function () {     
+        const signature = await generateSignature(minter.address, 1);
+        await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("DA isnt active");
+    }); 
+
+    it("DA mint should fail if DA_STARTING_TIMESTAMP is future", async function () {     
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // DA started 60 sec later
+        await auction.setStart(now + 60);
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+
+        const signature = await generateSignature(minter.address, 1);
+        await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("DA has not started!");
+    });     
+
+    it("DA mint should fail if dutch auction is over", async function () {     
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // DA ends after 48 hours
+        await auction.setStart(now - (48 * 60 * 60));
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+
+        const signature = await generateSignature(minter.address, 1);
+        await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("DA is finished");
+    });        
+
+    it("DA mint should fail if speficied tokenId is invalid", async function () {     
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 1 sec 
+        await auction.setStart(now - 1);
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        const signature = await generateSignature(minter.address, 1);
+        await expect(auction.connect(minter).mintDA(signature, 1, 10000, {value: parseEther('0.2')})).to.be.revertedWith("total mint limit");
+    });    
+    
+    it("DA mint should fail if provided eth is insufficient", async function () {     
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 1 sec 
+        await auction.setStart(now - 1);
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        const signature = await generateSignature(minter.address, 1);
+        await expect(auction.connect(minter).mintDA(signature, 1, 10, {value: parseEther('0.1')})).to.be.revertedWith("Did not send enough eth.");
+    });    
+
     // --- teamMint ---
     it("should be able to mint multiple tokens though mintTeam", async function () {     
         // Mint token ID 10, 11, and 15
@@ -358,8 +421,32 @@ describe("MEGAMI_Sale", function () {
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 15);
     });    
 
+    it("teamMint should fail if the receiver is zero", async function () {     
+        await expect(auction.connect(owner).mintTeam(AddressZero, [10, 11, 15])).to.be.revertedWith("recipient address is necessary");
+    }); 
+
     it("non owner should not be able to mint through mintTeam", async function () {     
         await expect(auction.connect(minter).mintTeam(minter.address, [10, 11, 15])).to.be.revertedWith("Ownable: caller is not the owner");
+    }); 
+
+    // --- publicMint ---
+    it("public mint shouldn't be possible until it becomes active", async function () {     
+        await expect(auction.connect(minter).public_mint(10)).to.be.revertedWith("Public sale isnt active");
+    }); 
+
+    it("public mint should fail if enough value isn't provided", async function () { 
+        // Make the public sale active 
+        await auction.setPublicSaleActive(true);
+
+        await expect(auction.connect(minter).public_mint(10, {value: parseEther('0.05')})).to.be.revertedWith("Did not send enough eth.");
+    }); 
+
+    it("public mint should success", async function () { 
+        // Make the public sale active 
+        await auction.setPublicSaleActive(true);
+
+        const tx = auction.connect(minter).public_mint(10, {value: parseEther('0.1')});
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
     }); 
 
     // --- getUnmintedTokenIds tests ---
