@@ -53,6 +53,22 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         super._beforeTokenTransfer(from, to, tokenId);
     }
 
+    /**
+     * @dev Since MEGAMI isn't minting tokens sequentially, this function scans all of minted tokens and returns unminted tokenIds
+     */
+    function getUnmintedTokenIds() public view returns (uint256[] memory) {
+        uint256[] memory unmintedTokenIds = new uint256[](_maxSupply - totalSupply);
+        uint256 unmintedCount = 0;
+        for (uint256 i = 0; i < _maxSupply;) {
+            if(!_exists(i)) {
+                unmintedTokenIds[unmintedCount] = i;
+                unchecked { ++unmintedCount; }
+            }
+            unchecked { ++i; }
+        }
+        return unmintedTokenIds;
+    }
+
     function mint(uint256 _tokenId, address _address) public onlyOwnerORSaleContract nonReentrant { 
         require(totalSupply <= _maxSupply, "minting limit");
 

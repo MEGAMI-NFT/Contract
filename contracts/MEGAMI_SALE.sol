@@ -120,7 +120,7 @@ contract MEGAMI_Sale is Ownable {
 
         // Validate Mintlist
         // 1 byte shifted address + number of MLs
-        uint256 message = uint256(uint160(msg.sender)) * 2 ** 8 + mlSpots;
+        uint256 message = (uint256(uint160(msg.sender)) << 8) + mlSpots;
         
         require(
             mlSigner ==
@@ -171,6 +171,10 @@ contract MEGAMI_Sale is Ownable {
     function setStart(uint256 startTime) public onlyOwner {
         DA_STARTING_TIMESTAMP = startTime;
         DA_ENDING_TIMESTAMP = DA_STARTING_TIMESTAMP + DA_LENGTH;
+    }
+
+    function getUnmintedTokenIds() external view returns (uint256[] memory) {
+        return MEGAMI_TOKEN.getUnmintedTokenIds();
     }
 
     //VARIABLES THAT NEED TO BE SET BEFORE MINT(pls remove comment when uploading to mainet)

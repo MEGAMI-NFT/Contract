@@ -448,4 +448,12 @@ describe("MEGAMI_Sale", function () {
         const tx = auction.connect(minter).public_mint(10, {value: parseEther('0.1')});
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
     }); 
+
+    // --- getUnmintedTokenIds tests ---
+    it("Should return unmintedTokenIds", async function() {
+        // Just do the simple testing here because this function is just calling MEGAMI contract which is tested separately
+        
+        // Initial remaining tokenIds sould be 10,000
+        expect((await megamiContract.getUnmintedTokenIds())).to.have.lengthOf(10000);
+    });
 });
