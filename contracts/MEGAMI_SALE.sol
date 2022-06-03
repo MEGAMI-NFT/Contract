@@ -123,7 +123,7 @@ contract MEGAMI_Sale is Ownable {
         require(msg.value >= _currentPrice, "Did not send enough eth.");
 
         // 1 byte shifted address + number of MLs
-        uint256 message = uint256(uint160(msg.sender)) * 2 ** 8 + mlSpots;
+        uint256 message = (uint256(uint160(msg.sender)) << 8) + mlSpots;
         
         require(
             mlSigner ==
