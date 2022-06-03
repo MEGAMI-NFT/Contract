@@ -431,21 +431,21 @@ describe("MEGAMI_Sale", function () {
 
     // --- publicMint ---
     it("public mint shouldn't be possible until it becomes active", async function () {     
-        await expect(auction.connect(minter).public_mint(10)).to.be.revertedWith("Public sale isnt active");
+        await expect(auction.connect(minter).mintPublic(10)).to.be.revertedWith("Public sale isnt active");
     }); 
 
     it("public mint should fail if enough value isn't provided", async function () { 
         // Make the public sale active 
         await auction.setPublicSaleActive(true);
 
-        await expect(auction.connect(minter).public_mint(10, {value: parseEther('0.05')})).to.be.revertedWith("Did not send enough eth.");
+        await expect(auction.connect(minter).mintPublic(10, {value: parseEther('0.05')})).to.be.revertedWith("Did not send enough eth.");
     }); 
 
     it("public mint should success", async function () { 
         // Make the public sale active 
         await auction.setPublicSaleActive(true);
 
-        const tx = auction.connect(minter).public_mint(10, {value: parseEther('0.1')});
+        const tx = auction.connect(minter).mintPublic(10, {value: parseEther('0.1')});
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
     }); 
 
@@ -456,4 +456,31 @@ describe("MEGAMI_Sale", function () {
         // Initial remaining tokenIds sould be 10,000
         expect((await megamiContract.getUnmintedTokenIds())).to.have.lengthOf(10000);
     });
+
+    // --- withdraw test ---
+    it("Should move fund to MEGAMI", async function() {
+        // Give 100 ETH to the contract through public mint
+        await auction.setPublicSaleActive(true);
+        await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
+  
+        const tx = auction.moveFund();
+        await expect(tx).to.be.not.reverted;
+        await expect(await tx).to.changeEtherBalance(megamiContract, parseEther("100"));
+
+        // contract's wallet balance should be 0
+        expect((await provider.getBalance(auction.address)).toString()).to.equal("0");
+    })
+
+    it("emergencyWithdraw should send fund to owner", async function() {
+        // Give 100 ETH to the contract through public mint
+        await auction.setPublicSaleActive(true);
+        await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
+  
+        const tx = auction.emergencyWithdraw();
+        await expect(tx).to.be.not.reverted;
+        await expect(await tx).to.changeEtherBalance(owner, parseEther("100"));
+
+        // contract's wallet balance should be 0
+        expect((await provider.getBalance(auction.address)).toString()).to.equal("0");
+      })    
 });
