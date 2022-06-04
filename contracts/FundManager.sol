@@ -53,9 +53,10 @@ contract FundManager is Ownable {
     }
 
     /**
-     @dev Emergency withdraw. Please use moveFund to megami for regular withdraw
+     @dev Emergency withdraw. Please use moveFundToManager to megami for regular withdraw
      */
-    function emergencyWithdraw() public onlyOwner {
-        require(payable(owner()).send(address(this).balance));
+    function emergencyWithdraw(address recipient) external onlyOwner {
+        require(recipient != address(0), "recipient shouldn't be 0");
+        require(payable(recipient).send(address(this).balance), "failed to withdraw");
     }
 }
