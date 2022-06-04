@@ -223,4 +223,7 @@ contract MEGAMI_Sale is ReentrancyGuard, Ownable {
         (bool sent, ) = address(_fundManager).call{value: address(this).balance}("");
         require(sent, "failed to move fund to FundManager contract");
     }
+    
+    // Disable renouncing ownership
+    function renounceOwnership() public override onlyOwner {}     
 }

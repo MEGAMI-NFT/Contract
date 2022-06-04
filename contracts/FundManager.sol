@@ -59,4 +59,7 @@ contract FundManager is Ownable {
         require(recipient != address(0), "recipient shouldn't be 0");
         require(payable(recipient).send(address(this).balance), "failed to withdraw");
     }
+
+    // Disable renouncing ownership
+    function renounceOwnership() public override onlyOwner {}     
 }

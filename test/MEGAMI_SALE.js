@@ -487,5 +487,16 @@ describe("MEGAMI_Sale", function () {
     
         // contract's wallet balance shouldn't be changed
         expect((await provider.getBalance(auction.address)).toString()).to.equal(parseEther("100"));
-      })    
+    })    
+
+    // --- test ownership ---
+    it("renounceOwnership should be NOP", async function () {
+        expect((await auction.owner()).toString()).to.equal(owner.address);
+
+        // try to discard ownership
+        await auction.renounceOwnership();
+
+        // owner shound't be changed
+        expect((await auction.owner()).toString()).to.equal(owner.address);
+    });   
 });

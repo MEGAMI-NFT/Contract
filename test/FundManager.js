@@ -131,4 +131,15 @@ beforeEach(async function () {
       // contract's wallet balance shouldn't be changed
       expect((await provider.getBalance(fundManager.address)).toString()).to.equal(parseEther("100"));
     }) 
+
+    // --- test ownership ---
+    it("renounceOwnership should be NOP", async function () {
+      expect((await fundManager.owner()).toString()).to.equal(r1.address);
+
+      // try to discard ownership
+      await fundManager.renounceOwnership();
+
+      // owner shound't be changed
+      expect((await fundManager.owner()).toString()).to.equal(r1.address);
+  });  
 });
