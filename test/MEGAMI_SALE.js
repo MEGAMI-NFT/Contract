@@ -12,12 +12,6 @@ const SIGNER_ADDRESS = "0x9A1D4e1150759DB4B2d02aC3c08335a2Ac9418fe";
 const SIGNER_SECRETKEY = "0cddb0e8ba05a84e45c5081775cee5eaff59aecf9e3f7c1e775d4419189d1590";
 const signer = web3.eth.accounts.privateKeyToAccount(SIGNER_SECRETKEY);
 
-
-async function setupMegami() {
-    const contractFactory = await ethers.getContractFactory('MEGAMI');
-    return await contractFactory.deploy();
-}
-
 async function generateSignature(address, num_of_ml) {
     // Construct message to sign.
     hex = num_of_ml.toString(16);
@@ -39,12 +33,16 @@ describe("MEGAMI_Sale", function () {
     beforeEach(async function () {
         [owner, minter, other] = await ethers.getSigners();
 
+        // Setup FundManager
+        const FundManagerFactory = await ethers.getContractFactory('FundManager');
+        fundManagerContract = await FundManagerFactory.deploy();
+
         // Setup Megami
         const MegamiFactory = await ethers.getContractFactory('MEGAMI');
-        megamiContract = await MegamiFactory.deploy();
+        megamiContract = await MegamiFactory.deploy(fundManagerContract.address);
 
         const MegamiSaleFactory = await hre.ethers.getContractFactory("MEGAMI_Sale");
-        auction = await MegamiSaleFactory.deploy(megamiContract.address);
+        auction = await MegamiSaleFactory.deploy(megamiContract.address, fundManagerContract.address);
 
         // Setup Megami Sale as a SaleContract
         await megamiContract.setSaleContract(auction.address);
@@ -449,15 +447,19 @@ describe("MEGAMI_Sale", function () {
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
     }); 
 
-    // --- withdraw test ---
-    it("Should move fund to MEGAMI", async function() {
+    // --- test withdraw ---
+    it("Should be able to update FundManager", async function() {
+        await expect(auction.setFundManagerContract(other.address)).to.be.not.reverted;
+    })
+    
+    it("Should move fund to FundManager", async function() {
         // Give 100 ETH to the contract through public mint
         await auction.setPublicSaleActive(true);
         await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
   
-        const tx = auction.moveFund();
+        const tx = auction.moveFundToManager();
         await expect(tx).to.be.not.reverted;
-        await expect(await tx).to.changeEtherBalance(megamiContract, parseEther("100"));
+        await expect(await tx).to.changeEtherBalance(fundManagerContract, parseEther("100"));
 
         // contract's wallet balance should be 0
         expect((await provider.getBalance(auction.address)).toString()).to.equal("0");
@@ -468,11 +470,22 @@ describe("MEGAMI_Sale", function () {
         await auction.setPublicSaleActive(true);
         await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
   
-        const tx = auction.emergencyWithdraw();
+        const tx = auction.emergencyWithdraw(other.address);
         await expect(tx).to.be.not.reverted;
-        await expect(await tx).to.changeEtherBalance(owner, parseEther("100"));
+        await expect(await tx).to.changeEtherBalance(other, parseEther("100"));
 
         // contract's wallet balance should be 0
         expect((await provider.getBalance(auction.address)).toString()).to.equal("0");
+    })    
+
+    it("emergencyWithdraw should faild if recipient is 0", async function() {
+        // Give 100 ETH to the contract through public mint
+        await auction.setPublicSaleActive(true);
+        await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
+    
+        await expect(auction.emergencyWithdraw(AddressZero)).to.be.revertedWith("recipient shouldn't be 0");
+    
+        // contract's wallet balance shouldn't be changed
+        expect((await provider.getBalance(auction.address)).toString()).to.equal(parseEther("100"));
       })    
 });

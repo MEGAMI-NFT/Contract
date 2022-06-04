@@ -7,14 +7,19 @@ const provider = waffle.provider;
 
 describe("MEGAMI", function () {
 beforeEach(async function () {
-    [owner, seller, minter, other] = await ethers.getSigners();
-    const Megami = await hre.ethers.getContractFactory("MEGAMI");
-    megami = await Megami.deploy();
+        [owner, seller, minter, other] = await ethers.getSigners();
 
-    // To deploy our contract, we just have to call Token.deploy() and await
-    // for it to be deployed(), which happens once its transaction has been
-    // mined.
-    await megami.deployed();
+        // Setup FundManager
+        const FundManagerFactory = await ethers.getContractFactory('FundManager');
+        fundManagerContract = await FundManagerFactory.deploy();
+
+        const Megami = await hre.ethers.getContractFactory("MEGAMI");
+        megami = await Megami.deploy(fundManagerContract.address);
+
+        // To deploy our contract, we just have to call Token.deploy() and await
+        // for it to be deployed(), which happens once its transaction has been
+        // mined.
+        await megami.deployed();
     });
 
     it("Owner should be able to mint a new token", async function () {
@@ -60,9 +65,9 @@ beforeEach(async function () {
 
     // --- Royalty tests ---
     it("Should change the defaultRoyaltiesReceipientAddress", async function () {
-        expect(await megami.defaultRoyaltiesReceipientAddress()).to.equal(megami.address);
-        
-        // set new defaultPercentageBasisPoints
+        expect(await megami.defaultRoyaltiesReceipientAddress()).to.equal(fundManagerContract.address);
+      
+        // set new defaultRoyaltiesReceipientAddress
         await megami.setDefaultRoyaltiesReceipientAddress(owner.address);
     
         expect(await megami.defaultRoyaltiesReceipientAddress()).to.equal(owner.address);
@@ -82,7 +87,7 @@ beforeEach(async function () {
       royalty = await megami.getRaribleV2Royalties(1);
   
       expect(royalty[0].value).to.equal(300);
-      expect(royalty[0].account).to.equal(megami.address);
+      expect(royalty[0].account).to.equal(fundManagerContract.address);
     });   
   
     it("Should return correct royalty through royaltyInfo", async function () {
@@ -91,7 +96,7 @@ beforeEach(async function () {
       // get royalty
       royalty = await megami.royaltyInfo(1, 100000);
   
-      expect(royalty[0]).to.equal(megami.address);
+      expect(royalty[0]).to.equal(fundManagerContract.address);
       expect(royalty[1]).to.equal(3000);
     });  
   
@@ -133,90 +138,50 @@ beforeEach(async function () {
       expect((await megami.owner()).toString()).to.equal(owner.address);
     });   
 
-    // --- test setFeeReceivers ---
-    it("Should be able to set feeReceivers", async function() {
-      await (expect(megami.setFeeReceivers([[owner.address, 5000], [seller.address, 3000], [other.address, 2000]]))).to.be.not.reverted;
-    })
-
-    it("Should fail to set feeReceivers if receivers are empty ", async function() {
-      await (expect(megami.setFeeReceivers([]))).to.be.revertedWith("at least one receiver is necessary");
-    })    
-
-    it("Should fail to set feeReceivers if receivers contain a zero address ", async function() {
-      await (expect(megami.setFeeReceivers([[owner.address, 5000], [seller.address, 3000], [AddressZero, 2000]]))).to.be.revertedWith("receiver address can't be null");
-    })  
-
-    it("Should fail to set feeReceivers if share percentage basis point is 0", async function() {
-      await (expect(megami.setFeeReceivers([[owner.address, 5000], [seller.address, 0], [other.address, 2000]]))).to.be.revertedWith("share percentage basis points can't be 0");
-    })  
-
-    it("Should fail to set feeReceivers if total share percentage basis point isn't 10000 ", async function() {
-      await (expect(megami.setFeeReceivers([[owner.address, 2000], [seller.address, 2000], [other.address, 2000]]))).to.be.revertedWith("total share percentage basis point isn't 10000");
-    })
-
     // --- test withdraw ---
-    it("Should distribute fee to feeReceivers", async function() {
-      // Give 100 ETH to the contract
-      await minter.sendTransaction({to: megami.address, value: parseEther("100")});
-
-      // Set feeReceivers
-      await (expect(megami.setFeeReceivers([[owner.address, 5000], [seller.address, 3000], [other.address, 2000]]))).to.be.not.reverted;
-
-      const tx = megami.withdraw();
+    it("Should be able to update FundManager", async function() {
+      await expect(megami.setFundManagerContract(other.address)).to.be.not.reverted;
+    })
+  
+    it("Should move fund to FundManager", async function() {
+      // Give 100 ETH to the contract through public mint
+      await minter.sendTransaction({to: megami.address, value: parseEther("100")});      const tx = megami.moveFundToManager();
       await expect(tx).to.be.not.reverted;
-      await expect(await tx).to.changeEtherBalance(owner, parseEther("50"));
-      await expect(await tx).to.changeEtherBalance(seller, parseEther("30"));
-      await expect(await tx).to.changeEtherBalance(other, parseEther("20"));
+      await expect(await tx).to.changeEtherBalance(fundManagerContract, parseEther("100"));
 
       // contract's wallet balance should be 0
       expect((await provider.getBalance(megami.address)).toString()).to.equal("0");
-    })
+  })
 
-    it("Should distribute fee to a single feeReceiver", async function() {
-      // Give 100 ETH to the contract
+    it("Should move fund to FundManager", async function() {
+      // Give 100 ETH to the contract through public mint
+      await minter.sendTransaction({to: megami.address, value: parseEther("100")});      const tx = megami.moveFundToManager();
+      await expect(tx).to.be.not.reverted;
+      await expect(await tx).to.changeEtherBalance(fundManagerContract, parseEther("100"));
+
+      // contract's wallet balance should be 0
+      expect((await provider.getBalance(megami.address)).toString()).to.equal("0");
+  })
+
+  it("emergencyWithdraw should send fund to owner", async function() {
+      // Give 100 ETH to the contract through public mint
       await minter.sendTransaction({to: megami.address, value: parseEther("100")});
 
-      // Set feeReceivers
-      await (expect(megami.setFeeReceivers([[other.address, 10000]]))).to.be.not.reverted;
-
-      const tx = megami.withdraw();
+      const tx = megami.emergencyWithdraw(other.address);
       await expect(tx).to.be.not.reverted;
       await expect(await tx).to.changeEtherBalance(other, parseEther("100"));
 
       // contract's wallet balance should be 0
       expect((await provider.getBalance(megami.address)).toString()).to.equal("0");
-    })
+  })    
 
-    it("Should distribute fee to feeReceivers with remainder", async function() {
-      // Give 5 wei to the contract
-      await minter.sendTransaction({to: megami.address, value: 5});
+  it("emergencyWithdraw should faild if recipient is 0", async function() {
+    // Give 100 ETH to the contract through public mint
+    await minter.sendTransaction({to: megami.address, value: parseEther("100")});
 
-      // Set feeReceivers
-      await (expect(megami.setFeeReceivers([[owner.address, 5000], [seller.address, 3000], [other.address, 2000]]))).to.be.not.reverted;
+    await expect(megami.emergencyWithdraw(AddressZero)).to.be.revertedWith("recipient shouldn't be 0");
 
-      const tx = megami.withdraw();
-      await expect(tx).to.be.not.reverted;
-      await expect(await tx).to.changeEtherBalance(owner, 3); // 2 + leftover 1
-      await expect(await tx).to.changeEtherBalance(seller, 1);
-      await expect(await tx).to.changeEtherBalance(other, 1);
-
-      // contract's wallet balance should be 0
-      expect((await provider.getBalance(megami.address)).toString()).to.equal("0");
-    })
-
-    it("withdraw should fail if feeReceivers is empty", async function() {
-      await expect(megami.withdraw()).to.be.revertedWith("receivers haven't been specified yet");
-    })    
-    
-    it("emergencyWithdraw should send fund to owner", async function() {
-      // Give 100 ETH to the contract
-      await minter.sendTransaction({to: megami.address, value: parseEther("100")});
-
-      const tx = megami.emergencyWithdraw();
-      await expect(tx).to.be.not.reverted;
-      await expect(await tx).to.changeEtherBalance(owner, parseEther("100"));
-
-      // contract's wallet balance should be 0
-      expect((await provider.getBalance(megami.address)).toString()).to.equal("0");
-    })         
+    // contract's wallet balance shouldn't be changed
+    expect((await provider.getBalance(megami.address)).toString()).to.equal(parseEther("100"));
+  })    
 });
