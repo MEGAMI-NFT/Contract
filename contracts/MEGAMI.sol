@@ -9,6 +9,7 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "./rarible/royalties/contracts/LibPart.sol";
 import "./rarible/royalties/contracts/LibRoyaltiesV2.sol";
 import "./rarible/royalties/contracts/RoyaltiesV2.sol";
+import "./FundManager.sol";
 
 contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     using Strings for uint256;
@@ -25,17 +26,14 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     address payable public defaultRoyaltiesReceipientAddress;  // This will be set in the constructor
     uint96 public defaultPercentageBasisPoints = 300;  // 3%
 
-    // Withdraw management
-    struct feeReceiver { 
-        address payable receiver;
-        uint96 sharePercentageBasisPoints;
-    }
-    feeReceiver[] private _feeReceivers;
+    // Fund Management
+    address payable private _fundManager;
 
-    constructor ()
+    constructor (address FundSplitterContractAddress)
     ERC721("MEGAMI", "MEGAMI")
     {
-        defaultRoyaltiesReceipientAddress = payable(address(this));
+        _fundManager = payable(FundSplitterContractAddress);
+        defaultRoyaltiesReceipientAddress = _fundManager;
     }
 
     function setSaleContract(address contractAddr)
@@ -59,24 +57,8 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         super._beforeTokenTransfer(from, to, tokenId);
     }
 
-    /**
-     * @dev Since MEGAMI isn't minting tokens sequentially, this function scans all of minted tokens and returns unminted tokenIds
-     */
-    function getUnmintedTokenIds() public view returns (uint256[] memory) {
-        uint256[] memory unmintedTokenIds = new uint256[](_maxSupply - totalSupply);
-        uint256 unmintedCount = 0;
-        for (uint256 i = 0; i < _maxSupply;) {
-            if(!_exists(i)) {
-                unmintedTokenIds[unmintedCount] = i;
-                unchecked { ++unmintedCount; }
-            }
-            unchecked { ++i; }
-        }
-        return unmintedTokenIds;
-    }
-
     function mint(uint256 _tokenId, address _address) public onlyOwnerORSaleContract nonReentrant { 
-        require(totalSupply <= _maxSupply, "minting limit");
+        require(totalSupply < _maxSupply, "minting limit");
         
         _safeMint(_address, _tokenId);
 
@@ -148,51 +130,27 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     // Disable renouncing ownership
     function renounceOwnership() public override onlyOwner {}     
 
-    // Withdraw 
+    // Fund Management
     receive() external payable {}
-    fallback() external payable {}
-
-    function setFeeReceivers(feeReceiver[] calldata receivers) external onlyOwner {
-        uint256 receiversLength = receivers.length;
-        require(receiversLength > 0, "at least one receiver is necessary");
-        uint256 totalPercentageBasisPoints = 0;
-        delete _feeReceivers;
-        for(uint256 i = 0; i < receiversLength;) {
-            require(receivers[i].receiver != address(0), "receiver address can't be null");
-            require(receivers[i].sharePercentageBasisPoints != 0, "share percentage basis points can't be 0");
-            _feeReceivers.push(feeReceiver(receivers[i].receiver, receivers[i].sharePercentageBasisPoints));
-
-            totalPercentageBasisPoints += receivers[i].sharePercentageBasisPoints;
-
-            unchecked { ++i; }
-        }
-        require(totalPercentageBasisPoints == 10000, "total share percentage basis point isn't 10000");
-    }
-
-    function withdraw() public onlyOwner {
-        require(_feeReceivers.length != 0, "receivers haven't been specified yet");
-
-        uint256 sendingAmount = address(this).balance;
-        uint256 receiversLength = _feeReceivers.length;
-        uint256 totalSent = 0;
-        if(receiversLength > 1) {
-            for(uint256 i = 1; i < receiversLength;) {
-                uint256 transferAmount = (sendingAmount * _feeReceivers[i].sharePercentageBasisPoints) / 10000;
-                totalSent += transferAmount;
-                require(_feeReceivers[i].receiver.send(transferAmount), "transfer failed");
-
-                unchecked { ++i; }
-            }
-        }
-
-        // Remainder is sent to the first receiver
-        require(_feeReceivers[0].receiver.send(sendingAmount - totalSent), "transfer failed");
-    }
+    fallback() external payable {}  
+    
+    function setFundManagerContract(address contractAddr)
+        external
+        onlyOwner
+    {
+        _fundManager = payable(contractAddr);
+    } 
 
     /**
-     @dev Emergency withdraw. Please use moveFund to megami for regular withdraw
+     @dev Emergency withdraw. Please use moveFundToManager to megami for regular withdraw
      */
-    function emergencyWithdraw() public onlyOwner {
-        require(payable(owner()).send(address(this).balance));
+    function emergencyWithdraw(address recipient) external onlyOwner {
+        require(recipient != address(0), "recipient shouldn't be 0");
+        require(payable(recipient).send(address(this).balance), "failed to withdraw");
+    }
+
+    function moveFundToManager() external onlyOwner {
+        (bool sent, ) = address(_fundManager).call{value: address(this).balance}("");
+        require(sent, "failed to move fund to FundManager contract");
     }
 }

@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./MEGAMI.sol";
+import "./FundManager.sol";
 
 contract MEGAMI_Sale is ReentrancyGuard, Ownable {
     using ECDSA for bytes32;
@@ -45,8 +46,11 @@ contract MEGAMI_Sale is ReentrancyGuard, Ownable {
     uint256 public WAVE_TIME_INTERVAL = 60 * 60 * 1; // Relese new wave every 1 hour
     uint256 private SUPPLY_PER_WAVE = TOTAL_SUPPLY / TOTAL_WAVE;
 
-    MEGAMI public MEGAMI_TOKEN;
+    // Fund Manager
+    address payable public _fundManager;
 
+    MEGAMI public MEGAMI_TOKEN;
+    
     //ML signer for verification
     address private mlSigner;
 
@@ -57,8 +61,9 @@ contract MEGAMI_Sale is ReentrancyGuard, Ownable {
         _;
     }
 
-    constructor(address MEGAMIContractAddress){
+    constructor(address MEGAMIContractAddress, address FundManagerContractAddress){
         MEGAMI_TOKEN = MEGAMI(payable(MEGAMIContractAddress));
+        _fundManager = payable(FundManagerContractAddress);
     }
 
     function currentPrice(uint256 tokenId) public view returns (uint256) {
@@ -174,10 +179,6 @@ contract MEGAMI_Sale is ReentrancyGuard, Ownable {
         DA_ENDING_TIMESTAMP = DA_STARTING_TIMESTAMP + DA_LENGTH;
     }
 
-    function getUnmintedTokenIds() external view returns (uint256[] memory) {
-        return MEGAMI_TOKEN.getUnmintedTokenIds();
-    }
-
     //VARIABLES THAT NEED TO BE SET BEFORE MINT(pls remove comment when uploading to mainet)
     function setSigner(address signer) external onlyOwner {
         mlSigner = signer;
@@ -199,15 +200,30 @@ contract MEGAMI_Sale is ReentrancyGuard, Ownable {
         return 2;
     }
 
+    // Fund Management
+    receive() external payable {}
+    fallback() external payable {}   
+
+    function setFundManagerContract(address contractAddr)
+        external
+        onlyOwner
+    {
+        _fundManager = payable(contractAddr);
+    } 
+
     /**
-     @dev Emergency withdraw. Please use moveFund to megami for regular withdraw
+     @dev Emergency withdraw. Please use moveFundToManager to megami for regular withdraw
      */
-    function emergencyWithdraw() external onlyOwner {
-        require(payable(owner()).send(address(this).balance), "failed to withdraw");
+    function emergencyWithdraw(address recipient) external onlyOwner {
+        require(recipient != address(0), "recipient shouldn't be 0");
+        require(payable(recipient).send(address(this).balance), "failed to withdraw");
     }
 
-    function moveFund() external onlyOwner {
-        (bool sent, ) = address(MEGAMI_TOKEN).call{value: address(this).balance}("");
-        require(sent, "failed to move fund to MEGAMI contract");
+    function moveFundToManager() external onlyOwner {
+        (bool sent, ) = address(_fundManager).call{value: address(this).balance}("");
+        require(sent, "failed to move fund to FundManager contract");
     }
+    
+    // Disable renouncing ownership
+    function renounceOwnership() public override onlyOwner {}     
 }
