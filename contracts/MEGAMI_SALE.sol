@@ -174,10 +174,6 @@ contract MEGAMI_Sale is ReentrancyGuard, Ownable {
         DA_ENDING_TIMESTAMP = DA_STARTING_TIMESTAMP + DA_LENGTH;
     }
 
-    function getUnmintedTokenIds() external view returns (uint256[] memory) {
-        return MEGAMI_TOKEN.getUnmintedTokenIds();
-    }
-
     //VARIABLES THAT NEED TO BE SET BEFORE MINT(pls remove comment when uploading to mainet)
     function setSigner(address signer) external onlyOwner {
         mlSigner = signer;

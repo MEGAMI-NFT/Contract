@@ -58,25 +58,6 @@ beforeEach(async function () {
       expect((await megami.totalSupply()).toString()).to.equal("0");
     });    
 
-    // --- getUnmintedTokenIds tests ---
-    it("Should return unmintedTokenIds", async function() {
-      // Initial remaining tokenIds sould be 10,000
-      expect((await megami.getUnmintedTokenIds())).to.have.lengthOf(10000);
-
-      // Mint token ID 10
-      expect(await megami.connect(owner).mint(10, minter.address)).to.emit(megami, 'Transfer').withArgs(AddressZero, minter.address, 10);
-
-      // Initial remaining tokenIds sould be 9,999
-      const unmintedIds = await megami.getUnmintedTokenIds();
-      expect(unmintedIds).to.have.lengthOf(9999);
-
-      for(i = 0; i < unmintedIds.length; i++ ){
-        if(unmintedIds[i] == 10) {
-          assert.fail();
-        }
-      }
-    });
-
     // --- Royalty tests ---
     it("Should change the defaultRoyaltiesReceipientAddress", async function () {
         expect(await megami.defaultRoyaltiesReceipientAddress()).to.equal(megami.address);
