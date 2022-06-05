@@ -20,7 +20,7 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
 
     uint256 public totalSupply = 0;
 
-    string private constant _baseTokenURI = "ipfs://xxxxx/";
+    string private _baseTokenURI = "ipfs://xxxxx/";
 
     // Royality management
     address payable public defaultRoyaltiesReceipientAddress;  // This will be set in the constructor
@@ -68,6 +68,14 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
         return string(abi.encodePacked(_baseTokenURI, tokenId.toString(), ".json"));
+    }
+
+    /**
+     * @dev Set baseTokenURI.
+     * @param newBaseTokenURI The value being set to baseTokenURI.
+     */
+    function setBaseTokenURI(string calldata newBaseTokenURI) external onlyOwner {
+        _baseTokenURI = newBaseTokenURI;
     }
 
     // Copied from ForgottenRunesWarriorsGuild. Thank you dotta ;)
