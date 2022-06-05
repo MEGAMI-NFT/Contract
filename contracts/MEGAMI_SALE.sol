@@ -2,7 +2,7 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -165,7 +165,7 @@ contract MEGAMI_Sale is ReentrancyGuard, Ownable {
     }
 
     function mintTeam(address recipient, uint256[] calldata tokenIds) external onlyOwner {
-        require(address(recipient) != address(0), 'recipient address is necessary');
+        require(address(recipient) != address(0), "recipient address is necessary");
         uint256 count = tokenIds.length;
         for (uint256 i = 0; i < count;) {
             MEGAMI_TOKEN.mint(tokenIds[i], recipient);
