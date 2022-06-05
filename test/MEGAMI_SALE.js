@@ -44,8 +44,8 @@ describe("MEGAMI_Sale", function () {
         const MegamiSaleFactory = await hre.ethers.getContractFactory("MEGAMI_Sale");
         auction = await MegamiSaleFactory.deploy(megamiContract.address, fundManagerContract.address);
 
-        // Setup Megami Sale as a SaleContract
-        await megamiContract.setSaleContract(auction.address);
+        // Setup Megami Sale as a SalesContract
+        await megamiContract.setSalesContract(auction.address);
     });
     
     // --- getWave ---

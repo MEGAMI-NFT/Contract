@@ -46,7 +46,7 @@ beforeEach(async function () {
       expect((await megami.totalSupply()).toString()).to.equal("0");
       
       // set a new seller
-      expect(await megami.setSaleContract(seller.address));
+      expect(await megami.setSalesContract(seller.address));
 
       // mint by seller
       expect(await megami.connect(seller).mint(10, other.address));
@@ -58,7 +58,7 @@ beforeEach(async function () {
       expect((await megami.totalSupply()).toString()).to.equal("0");
       
       // mint by other
-      await expect(megami.connect(other).mint(10, other.address)).to.be.revertedWith("Ownable: caller is not the Owner or SaleContract");
+      await expect(megami.connect(other).mint(10, other.address)).to.be.revertedWith("Ownable: caller is not the Owner or SalesContract");
       
       expect((await megami.totalSupply()).toString()).to.equal("0");
     });    

@@ -11,41 +11,61 @@ import "./rarible/royalties/contracts/LibRoyaltiesV2.sol";
 import "./rarible/royalties/contracts/RoyaltiesV2.sol";
 import "./interfaces/IMEGAMI.sol";
 
+/**
+ * @dev Implementation of the MEGAMI tokens which are ERC721 tokens.
+ */
 contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     using Strings for uint256;
 
-    uint256 private _maxSupply = 10000;
-    uint256 private _royalty = 1000;
-    address private _saleContractAddr;
-
+    // @notice Total number of the MEGAMI tokens minted so far.
     uint256 public totalSupply = 0;
 
+    // @dev Address of sales contract
+    address private _salesContractAddr;
+
+    // @dev Maxium number of MEGAMI tokens can be minted.
+    uint256 private constant _maxSupply = 10000;
+
+    // @dev The base URI of metadata 
     string private _baseTokenURI = "ipfs://xxxxx/";
 
-    // Royality management
-    address payable public defaultRoyaltiesReceipientAddress;  // This will be set in the constructor
+    // @dev Address of the royalty recipient 
+    address payable public defaultRoyaltiesReceipientAddress;
+
+    // @dev Percentage basis points of the royalty
     uint96 public defaultPercentageBasisPoints = 300;  // 3%
 
-    // Fund Management
+    // @dev Address of the fund manager contract
     address payable private _fundManager;
 
-    constructor (address FundSplitterContractAddress)
+    /**
+     * @dev Constractor of MEGAMI contract. Setting the fund manager and royalty recipient.
+     * @param fundManagerContractAddress Address of the contract managing funds.
+     */
+    constructor (address fundManagerContractAddress)
     ERC721("MEGAMI", "MEGAMI")
     {
-        _fundManager = payable(FundSplitterContractAddress);
+        _fundManager = payable(fundManagerContractAddress);
         defaultRoyaltiesReceipientAddress = _fundManager;
     }
 
-    function setSaleContract(address contractAddr)
+    /**
+     * @dev Sets the address of the sales contract.
+     * @param salesContractAddr Address of the contract selling MEGAMI tokens.
+     */
+    function setSalesContract(address salesContractAddr)
         external
         onlyOwner
     {
-        _saleContractAddr = contractAddr;
+        _salesContractAddr = salesContractAddr;
     }
 
-    modifier onlyOwnerORSaleContract()
+    /**
+     * @dev The modifier allowing the function access only for owner and sales contract.
+     */
+    modifier onlyOwnerORSalesContract()
     {
-        require(_saleContractAddr == _msgSender() || owner() == _msgSender(), "Ownable: caller is not the Owner or SaleContract");
+        require(_salesContractAddr == _msgSender() || owner() == _msgSender(), "Ownable: caller is not the Owner or SalesContract");
         _;
     }
 
@@ -57,10 +77,15 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         super._beforeTokenTransfer(from, to, tokenId);
     }
 
+    /**
+     * @dev Mint the specified MEGAMI token and transfer it to the specified address.
+     * @param _tokenId The token ID being minted.
+     * @param _address Receiver's address of the minted token.
+     */
     function mint(uint256 _tokenId, address _address) 
         external 
         override 
-        onlyOwnerORSaleContract nonReentrant 
+        onlyOwnerORSalesContract nonReentrant 
     { 
         require(_tokenId < _maxSupply, "can't mint more than limit");
         
@@ -69,6 +94,10 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         _safeMint(_address, _tokenId);
     }
 
+    /**
+     * @dev Return tokenURI for the specified token ID.
+     * @param tokenId The token ID the token URI is returned for.
+     */
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
         return string(abi.encodePacked(_baseTokenURI, tokenId.toString(), ".json"));
@@ -96,23 +125,23 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
 
     // Royality management
     /**
-     * @dev set defaultRoyaltiesReceipientAddress
-     * @param _defaultRoyaltiesReceipientAddress address New royality receipient address
+     * @dev Set the royalty recipient.
+     * @param _defaultRoyaltiesReceipientAddress The address of the new royalty receipient.
      */
     function setDefaultRoyaltiesReceipientAddress(address payable _defaultRoyaltiesReceipientAddress) public onlyOwner {
         defaultRoyaltiesReceipientAddress = _defaultRoyaltiesReceipientAddress;
     }
 
     /**
-     * @dev set defaultPercentageBasisPoints
-     * @param _defaultPercentageBasisPoints uint96 New royality percentagy basis points
+     * @dev Set the percentage basis points of the loyalty.
+     * @param _defaultPercentageBasisPoints The new percentagy basis points of the loyalty.
      */
     function setDefaultPercentageBasisPoints(uint96 _defaultPercentageBasisPoints) public onlyOwner {
         defaultPercentageBasisPoints = _defaultPercentageBasisPoints;
     }
 
     /**
-     * @dev return royality for Rarible
+     * @dev Return royality information for Rarible.
      */
     function getRaribleV2Royalties(uint256) external view override returns (LibPart.Part[] memory) {
         LibPart.Part[] memory _royalties = new LibPart.Part[](1);
@@ -122,13 +151,16 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     }
 
     /**
-     * @dev return royality in EIP-2981 standard
-     * @param _salePrice uint256 sales price of the token royality is calculated
+     * @dev Return royality information in EIP-2981 standard.
+     * @param _salePrice The sale price of the token that royality is being calculated.
      */
     function royaltyInfo(uint256, uint256 _salePrice) external view returns (address receiver, uint256 royaltyAmount) {
         return (defaultRoyaltiesReceipientAddress, (_salePrice * defaultPercentageBasisPoints) / 10000);
     }
 
+    /**
+     * @dev 
+     */
     function supportsInterface(bytes4 interfaceId) 
         public 
         view 
@@ -145,13 +177,21 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         return super.supportsInterface(interfaceId);
     }
     
-    // Disable renouncing ownership
+    /**
+     * @dev Do nothing for disable renouncing ownership.
+     */ 
     function renounceOwnership() public override onlyOwner {}     
 
     // Fund Management
+    /**
+     * @dev For receiving fund in case someone try to send it.
+     */
     receive() external payable {}
-    fallback() external payable {}  
     
+    /**
+     * @dev Set the address of the fund manager contract.
+     * @param contractAddr Address of the contract managing funds.
+     */
     function setFundManagerContract(address contractAddr)
         external
         onlyOwner
@@ -160,13 +200,17 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     } 
 
     /**
-     @dev Emergency withdraw. Please use moveFundToManager to megami for regular withdraw
+     * @dev Allow owner to send funds directly to recipient. This is for emergency purpose and use moveFundToManager for regular withdraw.
+     * @param recipient The address of the recipinet.
      */
     function emergencyWithdraw(address recipient) external onlyOwner {
         require(recipient != address(0), "recipient shouldn't be 0");
         require(payable(recipient).send(address(this).balance), "failed to withdraw");
     }
 
+    /**
+     * @dev Move all of funds to the fund manager contract.
+     */
     function moveFundToManager() external onlyOwner {
         (bool sent, ) = address(_fundManager).call{value: address(this).balance}("");
         require(sent, "failed to move fund to FundManager contract");
