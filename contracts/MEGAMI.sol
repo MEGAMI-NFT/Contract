@@ -9,9 +9,9 @@ import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import "./rarible/royalties/contracts/LibPart.sol";
 import "./rarible/royalties/contracts/LibRoyaltiesV2.sol";
 import "./rarible/royalties/contracts/RoyaltiesV2.sol";
-import "./FundManager.sol";
+import "./interfaces/IMEGAMI.sol";
 
-contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
+contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     using Strings for uint256;
 
     uint256 private _maxSupply = 10000;
@@ -57,7 +57,11 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         super._beforeTokenTransfer(from, to, tokenId);
     }
 
-    function mint(uint256 _tokenId, address _address) public onlyOwnerORSaleContract nonReentrant { 
+    function mint(uint256 _tokenId, address _address) 
+        external 
+        override 
+        onlyOwnerORSaleContract nonReentrant 
+    { 
         require(_tokenId < _maxSupply, "can't mint more than limit");
         
         totalSupply += 1;
@@ -125,7 +129,13 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         return (defaultRoyaltiesReceipientAddress, (_salePrice * defaultPercentageBasisPoints) / 10000);
     }
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) 
+        public 
+        view 
+        virtual 
+        override(IERC165, ERC721) 
+        returns (bool) 
+    {
         if (interfaceId == LibRoyaltiesV2._INTERFACE_ID_ROYALTIES) {
             return true;
         }

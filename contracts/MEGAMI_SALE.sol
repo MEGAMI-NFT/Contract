@@ -6,8 +6,7 @@ import '@openzeppelin/contracts/security/ReentrancyGuard.sol';
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "./MEGAMI.sol";
-import "./FundManager.sol";
+import "./interfaces/IMEGAMI.sol";
 
 contract MEGAMI_Sale is ReentrancyGuard, Ownable {
     using ECDSA for bytes32;
@@ -49,7 +48,7 @@ contract MEGAMI_Sale is ReentrancyGuard, Ownable {
     // Fund Manager
     address payable public _fundManager;
 
-    MEGAMI public MEGAMI_TOKEN;
+    IMEGAMI public MEGAMI_TOKEN;
     
     //ML signer for verification
     address private mlSigner;
@@ -62,7 +61,7 @@ contract MEGAMI_Sale is ReentrancyGuard, Ownable {
     }
 
     constructor(address MEGAMIContractAddress, address FundManagerContractAddress){
-        MEGAMI_TOKEN = MEGAMI(payable(MEGAMIContractAddress));
+        MEGAMI_TOKEN = IMEGAMI(payable(MEGAMIContractAddress));
         _fundManager = payable(FundManagerContractAddress);
     }
 
