@@ -63,6 +63,10 @@ beforeEach(async function () {
       expect((await megami.totalSupply()).toString()).to.equal("0");
     });    
 
+    it("Should not be able to mint more than the limit", async function () {
+      await expect(megami.connect(owner).mint(10000, minter.address)).to.revertedWith("can't mint more than limit");
+    });
+
     // --- Royalty tests ---
     it("Should change the defaultRoyaltiesReceipientAddress", async function () {
         expect(await megami.defaultRoyaltiesReceipientAddress()).to.equal(fundManagerContract.address);

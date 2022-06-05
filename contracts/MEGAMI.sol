@@ -58,11 +58,11 @@ contract MEGAMI is ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     }
 
     function mint(uint256 _tokenId, address _address) public onlyOwnerORSaleContract nonReentrant { 
-        require(totalSupply < _maxSupply, "minting limit");
+        require(_tokenId < _maxSupply, "can't mint more than limit");
         
-        _safeMint(_address, _tokenId);
-
         totalSupply += 1;
+
+        _safeMint(_address, _tokenId);
     }
 
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
