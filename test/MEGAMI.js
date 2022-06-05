@@ -120,12 +120,21 @@ beforeEach(async function () {
       // mint by owner
       expect(await megami.connect(owner).mint(10, other.address));
 
-      expect((await megami.tokenURI(10))).to.equal("ipfs://xxxxx/10.json")
+      expect((await megami.tokenURI(10))).to.equal("ipfs://xxxxx/10.json");
     });
 
     it("token URI must be return error for unminted token Id", async function() {
       await expect(megami.tokenURI(10)).to.be.revertedWith("ERC721Metadata: URI query for nonexistent token");
-    });      
+    });
+
+    it("base token URI should be updatable", async function() {
+      await megami.setBaseTokenURI("ipfs://yyyyy/");
+      
+      // mint by owner
+      expect(await megami.connect(owner).mint(10, other.address));
+
+      expect((await megami.tokenURI(10))).to.equal("ipfs://yyyyy/10.json");
+    });
 
     // --- test ownership ---
     it("renounceOwnership should be NOP", async function () {
