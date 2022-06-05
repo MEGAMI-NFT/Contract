@@ -69,14 +69,6 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         _;
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256 tokenId)
-        internal
-        virtual
-        override(ERC721)
-    {
-        super._beforeTokenTransfer(from, to, tokenId);
-    }
-
     /**
      * @dev Mint the specified MEGAMI token and transfer it to the specified address.
      * @param _tokenId The token ID being minted.
