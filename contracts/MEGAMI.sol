@@ -17,26 +17,40 @@ import "./interfaces/IMEGAMI.sol";
 contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     using Strings for uint256;
 
-    // @notice Total number of the MEGAMI tokens minted so far.
+    /**
+     * @dev Maxium number of MEGAMI tokens can be minted.
+     */ 
+    uint256 private constant MAX_SUPPLY = 10000;
+
+    /**
+     * @notice Total number of the MEGAMI tokens minted so far.
+     */ 
     uint256 public totalSupply = 0;
 
-    // @dev Address of sales contract
-    address private _salesContractAddr;
+    /**
+     * @dev The base URI of metadata 
+     */ 
+    string private baseTokenURI = "ipfs://xxxxx/";
 
-    // @dev Maxium number of MEGAMI tokens can be minted.
-    uint256 private constant _maxSupply = 10000;
+    /**
+     * @dev Address of the royalty recipient 
+     */
+    address payable private defaultRoyaltiesReceipientAddress;
 
-    // @dev The base URI of metadata 
-    string private _baseTokenURI = "ipfs://xxxxx/";
+    /**
+     * @dev Percentage basis points of the royalty
+     */ 
+    uint96 private defaultPercentageBasisPoints = 300;  // 3%
 
-    // @dev Address of the royalty recipient 
-    address payable public defaultRoyaltiesReceipientAddress;
+    /**
+     * @dev Address of sales contract
+     */ 
+    address private salesContractAddr;
 
-    // @dev Percentage basis points of the royalty
-    uint96 public defaultPercentageBasisPoints = 300;  // 3%
-
-    // @dev Address of the fund manager contract
-    address payable private _fundManager;
+    /**
+     * @dev Address of the fund manager contract
+     */
+    address payable private fundManager;
 
     /**
      * @dev Constractor of MEGAMI contract. Setting the fund manager and royalty recipient.
@@ -45,28 +59,41 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     constructor (address fundManagerContractAddress)
     ERC721("MEGAMI", "MEGAMI")
     {
-        _fundManager = payable(fundManagerContractAddress);
-        defaultRoyaltiesReceipientAddress = _fundManager;
+        fundManager = payable(fundManagerContractAddress);
+        defaultRoyaltiesReceipientAddress = fundManager;
     }
 
     /**
-     * @dev Sets the address of the sales contract.
-     * @param salesContractAddr Address of the contract selling MEGAMI tokens.
+     * @dev For receiving fund in case someone try to send it.
      */
-    function setSalesContract(address salesContractAddr)
-        external
-        onlyOwner
-    {
-        _salesContractAddr = salesContractAddr;
-    }
+    receive() external payable {}
 
     /**
      * @dev The modifier allowing the function access only for owner and sales contract.
      */
     modifier onlyOwnerORSalesContract()
     {
-        require(_salesContractAddr == _msgSender() || owner() == _msgSender(), "Ownable: caller is not the Owner or SalesContract");
+        require(salesContractAddr == _msgSender() || owner() == _msgSender(), "Ownable: caller is not the Owner or SalesContract");
         _;
+    }
+
+    /**
+     * @dev Sets the address of the sales contract.
+     * @param newSalesContractAddr Address of the contract selling MEGAMI tokens.
+     */
+    function setSalesContract(address newSalesContractAddr)
+        external
+        onlyOwner
+    {
+        salesContractAddr = newSalesContractAddr;
+    }
+
+    /**
+     * @dev Set baseTokenURI.
+     * @param newBaseTokenURI The value being set to baseTokenURI.
+     */
+    function setBaseTokenURI(string calldata newBaseTokenURI) external onlyOwner {
+        baseTokenURI = newBaseTokenURI;
     }
 
     /**
@@ -79,7 +106,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         override 
         onlyOwnerORSalesContract nonReentrant 
     { 
-        require(_tokenId < _maxSupply, "can't mint more than limit");
+        require(_tokenId < MAX_SUPPLY, "can't mint more than limit");
         
         totalSupply += 1;
 
@@ -87,49 +114,19 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     }
 
     /**
-     * @dev Return tokenURI for the specified token ID.
-     * @param tokenId The token ID the token URI is returned for.
-     */
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
-        return string(abi.encodePacked(_baseTokenURI, tokenId.toString(), ".json"));
-    }
-
-    /**
-     * @dev Set baseTokenURI.
-     * @param newBaseTokenURI The value being set to baseTokenURI.
-     */
-    function setBaseTokenURI(string calldata newBaseTokenURI) external onlyOwner {
-        _baseTokenURI = newBaseTokenURI;
-    }
-
-    // Copied from ForgottenRunesWarriorsGuild. Thank you dotta ;)
-    /**
-     * @dev ERC20s should not be sent to this contract, but if someone
-     * does, it's nice to be able to recover them
-     * @param token IERC20 the token address
-     * @param amount uint256 the amount to send
-     */
-    function forwardERC20s(IERC20 token, uint256 amount) public onlyOwner {
-        require(address(msg.sender) != address(0));
-        token.transfer(msg.sender, amount);
-    }
-
-    // Royality management
-    /**
      * @dev Set the royalty recipient.
-     * @param _defaultRoyaltiesReceipientAddress The address of the new royalty receipient.
+     * @param newDefaultRoyaltiesReceipientAddress The address of the new royalty receipient.
      */
-    function setDefaultRoyaltiesReceipientAddress(address payable _defaultRoyaltiesReceipientAddress) public onlyOwner {
-        defaultRoyaltiesReceipientAddress = _defaultRoyaltiesReceipientAddress;
+    function setDefaultRoyaltiesReceipientAddress(address payable newDefaultRoyaltiesReceipientAddress) external onlyOwner {
+        defaultRoyaltiesReceipientAddress = newDefaultRoyaltiesReceipientAddress;
     }
 
     /**
      * @dev Set the percentage basis points of the loyalty.
-     * @param _defaultPercentageBasisPoints The new percentagy basis points of the loyalty.
+     * @param newDefaultPercentageBasisPoints The new percentagy basis points of the loyalty.
      */
-    function setDefaultPercentageBasisPoints(uint96 _defaultPercentageBasisPoints) public onlyOwner {
-        defaultPercentageBasisPoints = _defaultPercentageBasisPoints;
+    function setDefaultPercentageBasisPoints(uint96 newDefaultPercentageBasisPoints) external onlyOwner {
+        defaultPercentageBasisPoints = newDefaultPercentageBasisPoints;
     }
 
     /**
@@ -149,9 +146,57 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     function royaltyInfo(uint256, uint256 _salePrice) external view returns (address receiver, uint256 royaltyAmount) {
         return (defaultRoyaltiesReceipientAddress, (_salePrice * defaultPercentageBasisPoints) / 10000);
     }
+     
+    /**
+     * @dev Set the address of the fund manager contract.
+     * @param contractAddr Address of the contract managing funds.
+     */
+    function setFundManagerContract(address contractAddr)
+        external
+        onlyOwner
+    {
+        fundManager = payable(contractAddr);
+    } 
 
     /**
-     * @dev 
+     * @dev Allow owner to send funds directly to recipient. This is for emergency purpose and use moveFundToManager for regular withdraw.
+     * @param recipient The address of the recipinet.
+     */
+    function emergencyWithdraw(address recipient) external onlyOwner {
+        require(recipient != address(0), "recipient shouldn't be 0");
+        require(payable(recipient).send(address(this).balance), "failed to withdraw");
+    }
+
+    /**
+     * @dev Move all of funds to the fund manager contract.
+     */
+    function moveFundToManager() external onlyOwner {
+        (bool sent, ) = address(fundManager).call{value: address(this).balance}("");
+        require(sent, "failed to move fund to FundManager contract");
+    }
+
+    /**
+     * @dev Return tokenURI for the specified token ID.
+     * @param tokenId The token ID the token URI is returned for.
+     */
+    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+        return string(abi.encodePacked(baseTokenURI, tokenId.toString(), ".json"));
+    }
+
+    /**
+     * @dev ERC20s should not be sent to this contract, but if someone does, it's nice to be able to recover them.
+     *      Copied from ForgottenRunesWarriorsGuild. Thank you dotta ;)
+     * @param token IERC20 the token address
+     * @param amount uint256 the amount to send
+     */
+    function forwardERC20s(IERC20 token, uint256 amount) public onlyOwner {
+        require(address(msg.sender) != address(0));
+        token.transfer(msg.sender, amount);
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
      */
     function supportsInterface(bytes4 interfaceId) 
         public 
@@ -173,38 +218,4 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      * @dev Do nothing for disable renouncing ownership.
      */ 
     function renounceOwnership() public override onlyOwner {}     
-
-    // Fund Management
-    /**
-     * @dev For receiving fund in case someone try to send it.
-     */
-    receive() external payable {}
-    
-    /**
-     * @dev Set the address of the fund manager contract.
-     * @param contractAddr Address of the contract managing funds.
-     */
-    function setFundManagerContract(address contractAddr)
-        external
-        onlyOwner
-    {
-        _fundManager = payable(contractAddr);
-    } 
-
-    /**
-     * @dev Allow owner to send funds directly to recipient. This is for emergency purpose and use moveFundToManager for regular withdraw.
-     * @param recipient The address of the recipinet.
-     */
-    function emergencyWithdraw(address recipient) external onlyOwner {
-        require(recipient != address(0), "recipient shouldn't be 0");
-        require(payable(recipient).send(address(this).balance), "failed to withdraw");
-    }
-
-    /**
-     * @dev Move all of funds to the fund manager contract.
-     */
-    function moveFundToManager() external onlyOwner {
-        (bool sent, ) = address(_fundManager).call{value: address(this).balance}("");
-        require(sent, "failed to move fund to FundManager contract");
-    }
 }

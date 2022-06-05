@@ -67,25 +67,7 @@ beforeEach(async function () {
       await expect(megami.connect(owner).mint(10000, minter.address)).to.revertedWith("can't mint more than limit");
     });
 
-    // --- Royalty tests ---
-    it("Should change the defaultRoyaltiesReceipientAddress", async function () {
-        expect(await megami.defaultRoyaltiesReceipientAddress()).to.equal(fundManagerContract.address);
-      
-        // set new defaultRoyaltiesReceipientAddress
-        await megami.setDefaultRoyaltiesReceipientAddress(owner.address);
-    
-        expect(await megami.defaultRoyaltiesReceipientAddress()).to.equal(owner.address);
-    });   
-
-    it("Should change the defaultPercentageBasisPoints", async function () {
-        expect(await megami.defaultPercentageBasisPoints()).to.equal(300);
-        
-        // set new defaultPercentageBasisPoints
-        await megami.setDefaultPercentageBasisPoints(1000);
-    
-        expect(await megami.defaultPercentageBasisPoints()).to.equal(1000);
-    });   
-      
+    // --- Royalty tests ---   
     it("Should return correct royalty through getRaribleV2Royalties", async function () {
       // get royalty through Rarible's interface
       royalty = await megami.getRaribleV2Royalties(1);
@@ -95,14 +77,34 @@ beforeEach(async function () {
     });   
   
     it("Should return correct royalty through royaltyInfo", async function () {
-      expect(await megami.defaultPercentageBasisPoints()).to.equal(300);
-
       // get royalty
       royalty = await megami.royaltyInfo(1, 100000);
   
       expect(royalty[0]).to.equal(fundManagerContract.address);
       expect(royalty[1]).to.equal(3000);
-    });  
+    });
+
+    it("Should change the defaultRoyaltiesReceipientAddress", async function () {
+      // set new defaultRoyaltiesReceipientAddress
+      await megami.setDefaultRoyaltiesReceipientAddress(owner.address);
+
+      // get royalty
+      royalty = await megami.royaltyInfo(1, 100000);
+  
+      expect(royalty[0]).to.equal(owner.address);
+      expect(royalty[1]).to.equal(3000);
+  });   
+
+  it("Should change the defaultPercentageBasisPoints", async function () {
+      // set new defaultPercentageBasisPoints
+      await megami.setDefaultPercentageBasisPoints(1000);
+
+      // get royalty
+      royalty = await megami.royaltyInfo(1, 100000);
+  
+      expect(royalty[0]).to.equal(fundManagerContract.address);
+      expect(royalty[1]).to.equal(10000);
+  });   
   
     it("Should support LibRoyaltiesV2", async function () {
       // get check supported interface

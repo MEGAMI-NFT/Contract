@@ -26,7 +26,7 @@ async function generateSignature(address, num_of_ml) {
     return signature;
 }
 
-describe("MEGAMI_Sale", function () {
+describe("MEGAMISales", function () {
     let auction;
     let megamiContract;
 
@@ -41,7 +41,7 @@ describe("MEGAMI_Sale", function () {
         const MegamiFactory = await ethers.getContractFactory('MEGAMI');
         megamiContract = await MegamiFactory.deploy(fundManagerContract.address);
 
-        const MegamiSaleFactory = await hre.ethers.getContractFactory("MEGAMI_Sale");
+        const MegamiSaleFactory = await hre.ethers.getContractFactory("MEGAMISales");
         auction = await MegamiSaleFactory.deploy(megamiContract.address, fundManagerContract.address);
 
         // Setup Megami Sale as a SalesContract
@@ -110,7 +110,7 @@ describe("MEGAMI_Sale", function () {
 
         for(i = 0; i < cases.length; i++ ) {
             // DA started 1 sec
-            await auction.setStart(now - 1 - (60 * 60 * cases[i][0]));
+            await auction.setAuctionStartTime(now - 1 - (60 * 60 * cases[i][0]));
             
             // Start Price
             expect((await auction.currentPrice(cases[i][1]))).to.equal(parseEther(cases[i][2])); 
@@ -134,7 +134,7 @@ describe("MEGAMI_Sale", function () {
         ];
         for(i = 0; i < cases.length; i++ ) {
             // After 5 * i min and 1 sec
-            await auction.setStart(now - 1 - (60 * cases[i][0])); 
+            await auction.setAuctionStartTime(now - 1 - (60 * cases[i][0])); 
 
             // Start Price - 0.05 * i
             expect((await auction.currentPrice(0))).to.equal(parseEther(cases[i][1])); 
@@ -158,7 +158,7 @@ describe("MEGAMI_Sale", function () {
         ];
         for(i = 0; i < cases.length; i++ ) {
             // After 5 * i min and 1 sec
-            await auction.setStart(now - 1 - (60 * cases[i][0])); 
+            await auction.setAuctionStartTime(now - 1 - (60 * cases[i][0])); 
 
             // Start Price - 0.05 * i
             expect((await auction.currentPrice(3))).to.equal(parseEther(cases[i][1])); 
@@ -182,7 +182,7 @@ describe("MEGAMI_Sale", function () {
         ];
         for(i = 0; i < cases.length; i++ ) {
             // After 5 * i min and 1 sec
-            await auction.setStart(now - 1 - (60 * cases[i][0])); 
+            await auction.setAuctionStartTime(now - 1 - (60 * cases[i][0])); 
 
             // Start Price - 0.05 * i
             expect((await auction.currentPrice(10))).to.equal(parseEther(cases[i][1])); 
@@ -193,7 +193,7 @@ describe("MEGAMI_Sale", function () {
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
         // After 25 hours and 1 sec
-        await auction.setStart(now - 1 - (60 * 60 * 25)); 
+        await auction.setAuctionStartTime(now - 1 - (60 * 60 * 25)); 
 
         // Price shouldn't be lower than the ending price
         expect((await auction.currentPrice(10))).to.equal(parseEther("0.08")); 
@@ -221,7 +221,7 @@ describe("MEGAMI_Sale", function () {
             [9010, 2010, "0.08"], // 24.5 hours after releasing wave 10            
         ];
         for(i = 0; i < cases.length; i++ ) {
-            await auction.setStart(now - 1 - (60 * cases[i][1])); 
+            await auction.setAuctionStartTime(now - 1 - (60 * cases[i][1])); 
             expect((await auction.currentPrice(cases[i][0]))).to.equal(parseEther(cases[i][2])); 
         };
     }); 
@@ -230,7 +230,7 @@ describe("MEGAMI_Sale", function () {
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
         // 10 sec before DA starts
-        await auction.setStart(now + 10); 
+        await auction.setAuctionStartTime(now + 10); 
 
         // Start Price
         await expect(auction.currentPrice(10)).to.be.revertedWith("wave mint yet");
@@ -260,7 +260,7 @@ describe("MEGAMI_Sale", function () {
         ];
         for(i = 0; i < cases.length; i++ ) {
             // adjust the start time
-            await auction.setStart(now - 1 - (60 * cases[i][1])); 
+            await auction.setAuctionStartTime(now - 1 - (60 * cases[i][1])); 
             if(cases[i][2]) {
                 await expect(auction.currentPrice(cases[i][0])).to.be.not.reverted; 
             } else{
@@ -270,9 +270,13 @@ describe("MEGAMI_Sale", function () {
     });
 
     // --- mintDA ---
-    it("default DA_ACTIVE should be false", async function () {
-        expect(await auction.DA_ACTIVE()).to.equal(false);
-    });      
+    it("auction is deactivated by default", async function () {
+        expect(await auction.auctionActive()).to.equal(false);
+    });
+
+    it("auction can't be activated without signer", async function () {
+        await expect(auction.setDutchActionActive(true)).to.be.revertedWith("Mintlist signer must be set before starting auction");
+    });    
 
     it("should be able to mint", async function () {
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
@@ -281,7 +285,7 @@ describe("MEGAMI_Sale", function () {
         await auction.setSigner(SIGNER_ADDRESS);
 
         // DA started 1 sec 
-        await auction.setStart(now - 1);
+        await auction.setAuctionStartTime(now - 1);
 
         // Set DA active
         await auction.setDutchActionActive(true);
@@ -299,7 +303,7 @@ describe("MEGAMI_Sale", function () {
         await auction.setSigner(SIGNER_ADDRESS);
 
         // DA started 1 sec 
-        await auction.setStart(now - 1);
+        await auction.setAuctionStartTime(now - 1);
 
         // Set DA active
         await auction.setDutchActionActive(true);
@@ -316,7 +320,7 @@ describe("MEGAMI_Sale", function () {
         await auction.setSigner(SIGNER_ADDRESS);
 
         // DA started 1 sec ago
-        await auction.setStart(now - 1);
+        await auction.setAuctionStartTime(now - 1);
 
         // Set DA active
         await auction.setDutchActionActive(true);
@@ -333,7 +337,7 @@ describe("MEGAMI_Sale", function () {
         await auction.setSigner(SIGNER_ADDRESS);
 
         // DA started 1 sec ago
-        await auction.setStart(now - 1);
+        await auction.setAuctionStartTime(now - 1);
 
         // Set DA active
         await auction.setDutchActionActive(true);
@@ -347,16 +351,22 @@ describe("MEGAMI_Sale", function () {
         await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("All ML spots have been consumed");
     });
 
-    it("DA mint should fail if DA_ACTIVE is false", async function () {     
+    it("DA mint should fail if auction isn't active", async function () {     
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
         const signature = await generateSignature(minter.address, 1);
         await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("DA isnt active");
     }); 
 
-    it("DA mint should fail if DA_STARTING_TIMESTAMP is future", async function () {     
+    it("DA mint should fail if auction start time is future", async function () {     
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+                
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
         // DA started 60 sec later
-        await auction.setStart(now + 60);
+        await auction.setAuctionStartTime(now + 60);
 
         // Set DA active
         await auction.setDutchActionActive(true);
@@ -366,10 +376,13 @@ describe("MEGAMI_Sale", function () {
     });     
 
     it("DA mint should fail if dutch auction is over", async function () {     
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
         // DA ends after 48 hours
-        await auction.setStart(now - (48 * 60 * 60));
+        await auction.setAuctionStartTime(now - (48 * 60 * 60));
 
         // Set DA active
         await auction.setDutchActionActive(true);
@@ -385,7 +398,7 @@ describe("MEGAMI_Sale", function () {
         await auction.setSigner(SIGNER_ADDRESS);
 
         // DA started 1 sec 
-        await auction.setStart(now - 1);
+        await auction.setAuctionStartTime(now - 1);
 
         // Set DA active
         await auction.setDutchActionActive(true);
@@ -401,7 +414,7 @@ describe("MEGAMI_Sale", function () {
         await auction.setSigner(SIGNER_ADDRESS);
 
         // DA started 1 sec 
-        await auction.setStart(now - 1);
+        await auction.setAuctionStartTime(now - 1);
 
         // Set DA active
         await auction.setDutchActionActive(true);
@@ -429,7 +442,7 @@ describe("MEGAMI_Sale", function () {
 
     // --- publicMint ---
     it("public mint shouldn't be possible until it becomes active", async function () {     
-        await expect(auction.connect(minter).mintPublic(10)).to.be.revertedWith("Public sale isnt active");
+        await expect(auction.connect(minter).mintPublic(10)).to.be.revertedWith("Public sale isn't active");
     }); 
 
     it("public mint should fail if enough value isn't provided", async function () { 
