@@ -460,6 +460,16 @@ describe("MEGAMISales", function () {
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
     }); 
 
+    it("public mint price can be changed", async function () {
+        expect(await auction.publicSalePrice()).to.equal(parseEther("0.1"));
+
+        // Update the public sale price
+        await expect(auction.setPublicSalePrice(parseEther("0.2"))).to.be.not.reverted;
+
+        // Confirm the sale price
+        expect(await auction.publicSalePrice()).to.equal(parseEther("0.2"));
+    });
+
     // --- test withdraw ---
     it("Should be able to update FundManager", async function() {
         await expect(auction.setFundManagerContract(other.address)).to.be.not.reverted;
