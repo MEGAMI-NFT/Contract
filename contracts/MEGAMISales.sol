@@ -75,11 +75,6 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     uint256 public constant RELEASE_WAVE_TIME_INTERVAL = 60 * 60 * 1; // Relese new wave every 1 hour
 
     /**
-     * @notice The price of MEGAMI tokens in the public sale. 
-     */
-    uint256 public constant PUBLIC_SALE_PRICE = 0.1 ether;
-
-    /**
      * @notice The status of the acution. 
      */
     bool public auctionActive = false; 
@@ -94,6 +89,11 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      * @notice The status of the public sale. 
      */
     bool public publicSaleActive = false;
+
+    /**
+     * @notice The price of MEGAMI tokens in the public sale. 
+     */
+    uint256 public publicSalePrice = 0.1 ether;
 
     /**
      * @dev Address of the fund manager contract.
@@ -197,12 +197,20 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     }
 
     /**
+     * @dev Set the price of the public sale.
+     * @param newPrice The new price of the public sale.
+     */
+    function setPublicSalePrice(uint256 newPrice) external onlyOwner {
+        publicSalePrice = newPrice;
+    }
+
+    /**
      * @dev Mint the specified MEGAMI token with public price.  
      * @param tokenId Token ID being minted.
      */
     function mintPublic(uint256 tokenId) external payable callerIsUser nonReentrant {
         require(publicSaleActive, "Public sale isn't active");
-        require(msg.value >= PUBLIC_SALE_PRICE, "Did not send enough eth.");
+        require(msg.value >= publicSalePrice, "Did not send enough eth.");
 
         megamiToken.mint(tokenId, msg.sender);
     }
