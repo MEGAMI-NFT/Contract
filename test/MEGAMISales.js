@@ -53,11 +53,15 @@ describe("MEGAMISales", function () {
         cases = [
             // tokenId, expected wave
             [0, 0],
-            [999, 0],
-            [1000, 1],
-            [1999, 1],
-            [9000, 9],
-            [9999, 9]
+            [1999, 0],
+            [2000, 1],
+            [3999, 1],
+            [4000, 2],
+            [5999, 2],
+            [6000, 3],
+            [7999, 3],
+            [8000, 4],
+            [9999, 4]
         ]
 
         for(i = 0; i < cases.length; i++ ) {
@@ -72,40 +76,40 @@ describe("MEGAMISales", function () {
         cases = [
             // wave, tokenId, expected starting price
             // Wave 0
-            [0, 0,       "10"], // Origin start
-            [0, 2,       "10"], // Origin end
-            [0, 3,        "5"], // Alter start
-            [0, 4,        "5"], // Alter end
-            [0, 5,      "0.2"], // Genearted start
-            [0, 999,    "0.2"], // Generated end
+            [0, 0,        "10"], // Origin start
+            [0, 5,        "10"], // Origin end
+            [0, 6,         "5"], // Alter start   
+            [0, 10,        "5"], // Alter end
+            [0, 11,      "0.2"], // Genearted start
+            [0, 1999,    "0.2"], // Generated end
+            // Wave 1
+            [1, 2000,    "10"], // Origin start
+            [1, 2005,    "10"], // Origin end
+            [1, 2006,     "5"], // Alter start
+            [1, 2010,     "5"], // Alter end
+            [1, 2011,   "0.2"], // Genearted start
+            [1, 3999,   "0.2"], // Generated end            
+            // Wave 2
+            [2, 4000,    "10"], // Origin start
+            [2, 4005,    "10"], // Origin end
+            [2, 4006,     "5"], // Alter start
+            [2, 4010,     "5"], // Alter end
+            [2, 4011,   "0.2"], // Genearted start
+            [2, 5999,   "0.2"], // Generated end
             // Wave 3
-            [3, 3000,    "10"], // Origin start
-            [3, 3002,    "10"], // Origin end
-            [3, 3003,     "5"], // Alter start
-            [3, 3004,     "5"], // Alter end
-            [3, 3005,   "0.2"], // Genearted start
-            [3, 3999,   "0.2"], // Generated end            
+            [3, 6000,    "10"], // Origin start
+            [3, 6005,    "10"], // Origin end
+            [3, 6006,     "5"], // Alter start
+            [3, 6010,     "5"], // Alter end
+            [3, 6011,   "0.2"], // Genearted start
+            [3, 7999,   "0.2"], // Generated end
             // Wave 4
-            [4, 4000,    "10"], // Origin start
-            [4, 4002,    "10"], // Origin end
-            [4, 4003,     "5"], // Alter start
-            [4, 4005,     "5"], // Alter end
-            [4, 4006,   "0.2"], // Genearted start
-            [4, 4999,   "0.2"], // Generated end
-            // Wave 7
-            [7, 7000,    "10"], // Origin start
-            [7, 7002,    "10"], // Origin end
-            [7, 7003,     "5"], // Alter start
-            [7, 7005,     "5"], // Alter end
-            [7, 7006,   "0.2"], // Genearted start
-            [7, 7999,   "0.2"], // Generated end
-            // Wave 8
-            [8, 8000,    "10"], // Origin start
-            [8, 8002,    "10"], // Origin end
-            [8, 8003,     "5"], // Alter start
-            [8, 8004,     "5"], // Alter end
-            [8, 8006,   "0.2"], // Genearted start
-            [8, 8999,   "0.2"], // Generated end                 
+            [4, 8000,    "10"], // Origin start
+            [4, 8005,    "10"], // Origin end
+            [4, 8006,     "5"], // Alter start
+            [4, 8009,     "5"], // Alter end
+            [4, 8010,   "0.2"], // Genearted start
+            [4, 9999,   "0.2"], // Generated end    
         ]
 
         for(i = 0; i < cases.length; i++ ) {
@@ -121,7 +125,7 @@ describe("MEGAMISales", function () {
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
         cases = [
-            // tokenId, past minutes, expected current price
+            // past minutes, expected current price
             [0,    "10"],
             [30,   "9.79"], 
             [60,   "9.58"], 
@@ -145,7 +149,7 @@ describe("MEGAMISales", function () {
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
         cases = [
-            // tokenId, past minutes, expected current price
+            // past minutes, expected current price
             [0,    "5"],
             [30,   "4.8975"], 
             [60,   "4.795"], 
@@ -161,7 +165,7 @@ describe("MEGAMISales", function () {
             await auction.setAuctionStartTime(now - 1 - (60 * cases[i][0])); 
 
             // Start Price - 0.05 * i
-            expect((await auction.currentPrice(3))).to.equal(parseEther(cases[i][1])); 
+            expect((await auction.currentPrice(6))).to.equal(parseEther(cases[i][1])); 
         };
     });
 
@@ -169,7 +173,7 @@ describe("MEGAMISales", function () {
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
         cases = [
-            // tokenId, past minutes, expected current price
+            // past minutes, expected current price
             [0,    "0.2"],
             [30,   "0.1975"], 
             [60,   "0.195"], 
@@ -185,7 +189,7 @@ describe("MEGAMISales", function () {
             await auction.setAuctionStartTime(now - 1 - (60 * cases[i][0])); 
 
             // Start Price - 0.05 * i
-            expect((await auction.currentPrice(10))).to.equal(parseEther(cases[i][1])); 
+            expect((await auction.currentPrice(11))).to.equal(parseEther(cases[i][1])); 
         };
     });
 
@@ -196,7 +200,7 @@ describe("MEGAMISales", function () {
         await auction.setAuctionStartTime(now - 1 - (60 * 60 * 25)); 
 
         // Price shouldn't be lower than the ending price
-        expect((await auction.currentPrice(10))).to.equal(parseEther("0.08")); 
+        expect((await auction.currentPrice(100))).to.equal(parseEther("0.08")); 
     }); 
 
     it("price can be managed independently in each wave", async function () {
@@ -204,21 +208,25 @@ describe("MEGAMISales", function () {
 
         cases = [
             // tokenId, past minutes, expected current price
-            [10,      0, "0.2"], 
-            [10,     60, "0.195"],
-            [1010,   60, "0.2"], 
-            [10,    120, "0.19"],
-            [1010,  120, "0.195"], 
-            [2010,  120, "0.2"],
-            [10,    540, "0.155"],
-            [1010,  540, "0.16"], 
-            [2010,  540, "0.165"],            
-            [8010,  540, "0.195"],
-            [9010,  540, "0.2"],
-            [8010, 1950, "0.08"],   // 24.5 hours after releasing wave 9
-            [9010, 1950, "0.0825"], // 23.5 hours after releasing wave 10
-            [8010, 2010, "0.08"],   // 25.5 hours after releasing wave 9
-            [9010, 2010, "0.08"], // 24.5 hours after releasing wave 10            
+            [100,     0, "0.2"],    // wave 0 release
+            [100,    60, "0.195"],  // wave 1 release
+            [2100,   60, "0.2"],   
+            [100,   120, "0.19"],   // wave 2 release
+            [2100,  120, "0.195"], 
+            [4100,  120, "0.2"],
+            [100,   180, "0.185"],  // wave 3 release
+            [2100,  180, "0.19"], 
+            [4100,  180, "0.195"],
+            [6100,  180, "0.2"],  
+            [100,   240, "0.18"],   // wave 4 release
+            [2100,  240, "0.185"], 
+            [4100,  240, "0.19"],
+            [6100,  240, "0.195"],            
+            [8100,  240, "0.2"],
+            [6100, 1650, "0.08"],   // 24.5 hours after releasing wave 3
+            [9100, 1650, "0.0825"], // 23.5 hours after releasing wave 4
+            [6100, 1710, "0.08"],   // 25.5 hours after releasing wave 3
+            [9100, 1710, "0.08"],   // 24.5 hours after releasing wave 4           
         ];
         for(i = 0; i < cases.length; i++ ) {
             await auction.setAuctionStartTime(now - 1 - (60 * cases[i][1])); 
@@ -233,7 +241,7 @@ describe("MEGAMISales", function () {
         await auction.setAuctionStartTime(now + 10); 
 
         // Start Price
-        await expect(auction.currentPrice(10)).to.be.revertedWith("wave mint yet");
+        await expect(auction.currentPrice(100)).to.be.revertedWith("wave mint yet");
     });  
 
     it("DA start time should be managed independently", async function () {
@@ -242,21 +250,30 @@ describe("MEGAMISales", function () {
         cases = [
             // tokenId, past minutes, price returned
             [0,          0, true], 
-            [1000,       0, false],
-            [2000,       0, false], 
-            [9000,       0, false],
-            [0,         60, true], 
-            [1000,      60, true],
-            [2000,      60, false], 
-            [9000,      60, false],
-            [0,        120, true], 
-            [1000,     120, true],
-            [2000,     120, true], 
-            [9000,     120, false],
-            [0,        540, true], 
-            [1000,     540, true],
-            [2000,     540, true], 
-            [9000,     540, true],                        
+            [2000,       0, false],
+            [4000,       0, false], 
+            [6000,       0, false], 
+            [8000,       0, false],
+            [0,          60, true], 
+            [2000,       60, true],
+            [4000,       60, false], 
+            [6000,       60, false], 
+            [8000,       60, false],
+            [0,          120, true], 
+            [2000,       120, true],
+            [4000,       120, true], 
+            [6000,       120, false], 
+            [8000,       120, false],
+            [0,          180, true], 
+            [2000,       180, true],
+            [4000,       180, true], 
+            [6000,       180, true], 
+            [8000,       180, false],    
+            [0,          240, true], 
+            [2000,       240, true],
+            [4000,       240, true], 
+            [6000,       240, true], 
+            [8000,       240, true],                         
         ];
         for(i = 0; i < cases.length; i++ ) {
             // adjust the start time
@@ -290,10 +307,10 @@ describe("MEGAMISales", function () {
         // Set DA active
         await auction.setDutchActionActive(true);
         
-        // Mint token ID 10 with 1 mintlist spot
+        // Mint token ID 100 with 1 mintlist spot
         const signature = await generateSignature(minter.address, 1);
-        const tx = auction.connect(minter).mintDA(signature, 1, 10, {value: parseEther('0.2')});
-        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
+        const tx = auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.2')});
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 100);
     });
 
     it("DA mint should fail because of wrong address", async function () {
@@ -308,9 +325,9 @@ describe("MEGAMISales", function () {
         // Set DA active
         await auction.setDutchActionActive(true);
         
-        // Mint token ID 10 with 1 mintlist spot
+        // Mint token ID 100 with 1 mintlist spot
         const signature = await generateSignature(minter.address, 1);
-        await expect(auction.connect(other).mintDA(signature, 1, 10, {value: parseEther('0.2')})).to.be.revertedWith("Signer address mismatch.");
+        await expect(auction.connect(other).mintDA(signature, 1, 100, {value: parseEther('0.2')})).to.be.revertedWith("Signer address mismatch.");
     });
 
     it("DA mint should fail because of wrong ml spots", async function () {
@@ -325,9 +342,9 @@ describe("MEGAMISales", function () {
         // Set DA active
         await auction.setDutchActionActive(true);
         
-        // Mint token ID 10 with 1 mintlist spot
+        // Mint token ID 100 with 1 mintlist spot
         const signature = await generateSignature(minter.address, 1);
-        await expect(auction.connect(minter).mintDA(signature, 2, 10, {value: parseEther('0.2')})).to.be.revertedWith("Signer address mismatch.");
+        await expect(auction.connect(minter).mintDA(signature, 2, 100, {value: parseEther('0.2')})).to.be.revertedWith("Signer address mismatch.");
     });
 
     it("should not be able to mint more than ml spots", async function () {
@@ -342,13 +359,13 @@ describe("MEGAMISales", function () {
         // Set DA active
         await auction.setDutchActionActive(true);
         
-        // Mint token ID 10 with 1 mintlist spot
+        // Mint token ID 100 with 1 mintlist spot
         const signature = await generateSignature(minter.address, 1);
-        const tx = auction.connect(minter).mintDA(signature, 1, 10, {value: parseEther('0.2')});
-        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
+        const tx = auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.2')});
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 100);
 
         // Try to mint one more
-        await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("All ML spots have been consumed");
+        await expect(auction.connect(minter).mintDA(signature, 1, 101, {value: parseEther('0.2')})).to.be.revertedWith("All ML spots have been consumed");
     });
 
     it("DA mint should fail if auction isn't active", async function () {     
@@ -356,7 +373,7 @@ describe("MEGAMISales", function () {
         await auction.setSigner(SIGNER_ADDRESS);
 
         const signature = await generateSignature(minter.address, 1);
-        await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("DA isnt active");
+        await expect(auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.2')})).to.be.revertedWith("DA isnt active");
     }); 
 
     it("DA mint should fail if auction start time is future", async function () {     
@@ -372,7 +389,7 @@ describe("MEGAMISales", function () {
         await auction.setDutchActionActive(true);
 
         const signature = await generateSignature(minter.address, 1);
-        await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("DA has not started!");
+        await expect(auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.2')})).to.be.revertedWith("DA has not started!");
     });     
 
     it("DA mint should fail if dutch auction is over", async function () {     
@@ -388,7 +405,7 @@ describe("MEGAMISales", function () {
         await auction.setDutchActionActive(true);
 
         const signature = await generateSignature(minter.address, 1);
-        await expect(auction.connect(minter).mintDA(signature, 1, 11, {value: parseEther('0.2')})).to.be.revertedWith("DA is finished");
+        await expect(auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.2')})).to.be.revertedWith("DA is finished");
     });        
 
     it("DA mint should fail if speficied tokenId is invalid", async function () {     
@@ -420,7 +437,7 @@ describe("MEGAMISales", function () {
         await auction.setDutchActionActive(true);
         
         const signature = await generateSignature(minter.address, 1);
-        await expect(auction.connect(minter).mintDA(signature, 1, 10, {value: parseEther('0.1')})).to.be.revertedWith("Did not send enough eth.");
+        await expect(auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.1')})).to.be.revertedWith("Did not send enough eth.");
     });    
 
     // --- teamMint ---
