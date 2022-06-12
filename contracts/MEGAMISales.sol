@@ -67,7 +67,12 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     /**
      * @notice Total release waves. 
      */
-    uint256 public constant TOTAL_RELEASE_WAVES = 10;
+    uint256 public constant TOTAL_RELEASE_WAVES = 5;
+
+    /**
+     * @notice Number of Origins in a wave.
+     */
+    uint256 public constant NUMBER_OF_ORIGINS_IN_WAVE = 6;  // 30 origins divided by 5 waves
 
     /**
      * @notice Release interval (seconds.)
@@ -295,8 +300,10 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         // Check the type of Megami and setting staring price and price drop
         uint256 startingPrice = AUCTION_STARTING_PRICE_GENERATED;
         uint256 priceDecrement = AUCTION_PRICE_DROP_UNIT_GENERATED;
-        if(tokenId % getSupplyPerWave() <= 2 + getNumberOfAlters(wave)) { // Origin is always 3 (0,1,2)
-            if(tokenId % getSupplyPerWave() <= 2) {
+
+        uint256 sequenceIdInWave = tokenId % getSupplyPerWave();
+        if(sequenceIdInWave < NUMBER_OF_ORIGINS_IN_WAVE + getNumberOfAlters(wave)) {
+            if(sequenceIdInWave < NUMBER_OF_ORIGINS_IN_WAVE) {
                 // Origin
                 startingPrice = AUCTION_STARTING_PRICE_ORIGIN;
                 priceDecrement = AUCTION_PRICE_DROP_UNIT_ORIGIN;
@@ -353,11 +360,8 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      * @param wave Relase wave that this function checks if extra Alter is relased or not.
      */
     function getNumberOfAlters(uint256 wave) private pure returns (uint256) {
-        // Since there are 24 alters, we need to release an extra in 4 waves
-        if(wave >= 4 && wave <= 7) {
-            return 3;
-        }
-        return 2;
+        // Since there are only 24 alters, it runs short of them in the 5th wave.
+        return wave == 4 ? 4 : 5;
     }
 
     /**
