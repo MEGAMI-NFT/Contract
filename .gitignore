@@ -8,3 +8,6 @@ cache
 
 coverage.json
 coverage
+
+.vscode
+
