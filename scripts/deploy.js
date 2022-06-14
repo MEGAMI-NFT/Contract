@@ -25,6 +25,11 @@ async function main() {
 
     console.log("MEGAMISales address:", megamiSales.address);
   
+    // We need to wait until Etherscan create a cache of our contracts
+    console.log("Waiting 1 minute for making sure bytecode being cached by etherscan");
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    await sleep(60000);
+
     console.log("Verifying FundManager");
 
     try {
