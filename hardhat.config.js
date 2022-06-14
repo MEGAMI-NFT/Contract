@@ -4,7 +4,7 @@ require("hardhat-gas-reporter");
 require("solidity-coverage")
 require("@nomiclabs/hardhat-etherscan");
 
-const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
+const INFURA_API_KEY = process.env.INFURA_API_KEY;
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -13,7 +13,7 @@ module.exports = {
   solidity: "0.8.7",
   networks: {
     rinkeby: {
-      url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+      url: `https://rinkeby.infura.io/v3/${INFURA_API_KEY}`,
       accounts: [process.env.RINKEBY_PRIVATE_KEY]
     }
   },
