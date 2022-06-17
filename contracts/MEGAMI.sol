@@ -53,6 +53,11 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     address payable private fundManager;
 
     /**
+     * @dev 100% in bases point
+     */
+    uint256 private constant HUNDRED_PERCENT_IN_BASIS_POINTS = 10000;
+
+    /**
      * @dev Constractor of MEGAMI contract. Setting the fund manager and royalty recipient.
      * @param fundManagerContractAddress Address of the contract managing funds.
      */
@@ -145,7 +150,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      * @param _salePrice The sale price of the token that royality is being calculated.
      */
     function royaltyInfo(uint256, uint256 _salePrice) external view returns (address receiver, uint256 royaltyAmount) {
-        return (defaultRoyaltiesReceipientAddress, (_salePrice * defaultPercentageBasisPoints) / 10000);
+        return (defaultRoyaltiesReceipientAddress, (_salePrice * defaultPercentageBasisPoints) / HUNDRED_PERCENT_IN_BASIS_POINTS);
     }
      
     /**

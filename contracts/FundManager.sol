@@ -7,6 +7,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @dev Implementation of the Fund Manager contract that allows funds to split to contributors.
  */
 contract FundManager is Ownable {
+
+    /**
+     * @dev 100% in bases point
+     */
+    uint256 private constant HUNDRED_PERCENT_IN_BASIS_POINTS = 10000;
     
     /**
      * @dev Struct managing the receivers and their share (percentage basis points).
@@ -43,7 +48,7 @@ contract FundManager is Ownable {
 
             unchecked { ++i; }
         }
-        require(totalPercentageBasisPoints == 10000, "total share percentage basis point isn't 10000");
+        require(totalPercentageBasisPoints == HUNDRED_PERCENT_IN_BASIS_POINTS, "total share percentage basis point isn't 10000");
     }
 
     /**
@@ -57,7 +62,7 @@ contract FundManager is Ownable {
         uint256 receiversLength = _fundReceivers.length;
         if(receiversLength > 1) {
             for(uint256 i = 1; i < receiversLength;) {
-                uint256 transferAmount = (sendingAmount * _fundReceivers[i].sharePercentageBasisPoints) / 10000;
+                uint256 transferAmount = (sendingAmount * _fundReceivers[i].sharePercentageBasisPoints) / HUNDRED_PERCENT_IN_BASIS_POINTS;
                 (bool sent, ) = _fundReceivers[i].receiver.call{value: transferAmount}("");
                 require(sent, "transfer failed");
                 unchecked { ++i; }
