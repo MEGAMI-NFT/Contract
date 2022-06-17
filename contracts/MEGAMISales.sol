@@ -266,7 +266,9 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      */
     function emergencyWithdraw(address recipient) external onlyOwner {
         require(recipient != address(0), "recipient shouldn't be 0");
-        require(payable(recipient).send(address(this).balance), "failed to withdraw");
+        
+        (bool sent, ) = payable(recipient).call{value: address(this).balance}("");
+        require(sent, "failed to withdraw");
     }
 
     /**

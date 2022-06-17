@@ -60,14 +60,15 @@ contract FundManager is Ownable {
             for(uint256 i = 1; i < receiversLength;) {
                 uint256 transferAmount = (sendingAmount * _fundReceivers[i].sharePercentageBasisPoints) / 10000;
                 totalSent += transferAmount;
-                require(_fundReceivers[i].receiver.send(transferAmount), "transfer failed");
-
+                (bool sent, ) = _fundReceivers[i].receiver.call{value: transferAmount}("");
+                require(sent, "transfer failed");
                 unchecked { ++i; }
             }
         }
 
         // Remainder is sent to the first receiver
-        require(_fundReceivers[0].receiver.send(sendingAmount - totalSent), "transfer failed");
+        (bool sent, ) = _fundReceivers[0].receiver.call{value: sendingAmount - totalSent}("");
+        require(sent, "transfer failed");
     }
 
     /**
@@ -76,7 +77,9 @@ contract FundManager is Ownable {
      */
     function emergencyWithdraw(address recipient) external onlyOwner {
         require(recipient != address(0), "recipient shouldn't be 0");
-        require(payable(recipient).send(address(this).balance), "failed to withdraw");
+
+        (bool sent, ) = payable(recipient).call{value: address(this).balance}("");
+        require(sent, "failed to withdraw");
     }
 
     /**
