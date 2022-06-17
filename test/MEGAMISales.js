@@ -487,8 +487,15 @@ describe("MEGAMISales", function () {
         // Make the public sale active 
         await auction.setPublicSaleActive(true);
 
-        await expect(auction.connect(minter).mintPublic(10, {value: parseEther('0.05')})).to.be.revertedWith("Did not send enough eth.");
+        await expect(auction.connect(minter).mintPublic(10, {value: parseEther('0.05')})).to.be.revertedWith("Incorrect amount of eth.");
     }); 
+
+    it("public mint should fail if too much value is provided", async function () { 
+        // Make the public sale active 
+        await auction.setPublicSaleActive(true);
+
+        await expect(auction.connect(minter).mintPublic(10, {value: parseEther('0.15')})).to.be.revertedWith("Incorrect amount of eth.");
+    });     
 
     it("public mint should success", async function () { 
         // Make the public sale active 
@@ -515,6 +522,7 @@ describe("MEGAMISales", function () {
     
     it("Should move fund to FundManager", async function() {
         // Give 100 ETH to the contract through public mint
+        await expect(auction.setPublicSalePrice(parseEther("100"))).to.be.not.reverted;
         await auction.setPublicSaleActive(true);
         await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
   
@@ -528,6 +536,7 @@ describe("MEGAMISales", function () {
 
     it("emergencyWithdraw should send fund to owner", async function() {
         // Give 100 ETH to the contract through public mint
+        await expect(auction.setPublicSalePrice(parseEther("100"))).to.be.not.reverted;
         await auction.setPublicSaleActive(true);
         await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
   
@@ -541,6 +550,7 @@ describe("MEGAMISales", function () {
 
     it("emergencyWithdraw should faild if recipient is 0", async function() {
         // Give 100 ETH to the contract through public mint
+        await expect(auction.setPublicSalePrice(parseEther("100"))).to.be.not.reverted;
         await auction.setPublicSaleActive(true);
         await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
     

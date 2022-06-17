@@ -223,7 +223,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      */
     function mintPublic(uint256 tokenId) external payable callerIsUser nonReentrant {
         require(publicSaleActive, "Public sale isn't active");
-        require(msg.value >= publicSalePrice, "Did not send enough eth.");
+        require(msg.value == publicSalePrice, "Incorrect amount of eth.");
 
         megamiToken.mint(tokenId, msg.sender);
     }
