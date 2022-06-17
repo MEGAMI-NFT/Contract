@@ -313,6 +313,27 @@ describe("MEGAMISales", function () {
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 100);
     });
 
+    it("DA mint should return overpaid amount if provided eth is more than current price", async function () {     
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 24 hours ago
+        await auction.setAuctionStartTime(now - (24 * 60 * 60));
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        // Mint token ID 100 with 1 mintlist spot
+        const signature = await generateSignature(minter.address, 1);
+        const tx = auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.2')});
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 100);
+
+        // Minter should get charged only current price and get refunded the overpaid amount
+        await expect(await tx).to.changeEtherBalance(minter, parseEther('-0.08'));
+    }); 
+
     it("DA mint should fail because of wrong address", async function () {
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 

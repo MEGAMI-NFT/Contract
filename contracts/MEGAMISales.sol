@@ -191,9 +191,17 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         // Validate token ID
         require(tokenId < TOTAL_SUPPLY, "total mint limit");
 
+        // Get current mint price
         uint256 _currentPrice = currentPrice(tokenId);
 
+        // Validate the paid amount
         require(msg.value >= _currentPrice, "Did not send enough eth.");
+
+        // Send back overpaid amount if minter sent more than _currentPrice
+        if (msg.value > _currentPrice) {
+            (bool sent, ) = msg.sender.call{value: msg.value - _currentPrice}("");
+            require(sent, "failed to send back fund");
+        }
 
         // Increment used ML spots
         userToUsedMLs[msg.sender] += 1;
@@ -266,7 +274,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      */
     function emergencyWithdraw(address recipient) external onlyOwner {
         require(recipient != address(0), "recipient shouldn't be 0");
-        
+
         (bool sent, ) = payable(recipient).call{value: address(this).balance}("");
         require(sent, "failed to withdraw");
     }
