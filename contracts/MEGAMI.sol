@@ -164,7 +164,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      */
     function emergencyWithdraw(address recipient) external onlyOwner {
         require(recipient != address(0), "recipient shouldn't be 0");
-        
+
         (bool sent, ) = payable(recipient).call{value: address(this).balance}("");
         require(sent, "failed to withdraw");
     }
@@ -193,7 +193,6 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      * @param amount uint256 the amount to send
      */
     function forwardERC20s(IERC20 token, uint256 amount) public onlyOwner {
-        require(address(msg.sender) != address(0));
         token.transfer(msg.sender, amount);
     }
 
