@@ -67,8 +67,8 @@ contract FundManager is Ownable {
         }
 
         // Remainder is sent to the first receiver
-        (bool sent, ) = _fundReceivers[0].receiver.call{value: sendingAmount - totalSent}("");
-        require(sent, "transfer failed");
+        (bool sentRemainder, ) = _fundReceivers[0].receiver.call{value: sendingAmount - totalSent}("");
+        require(sentRemainder, "transfer failed");
     }
 
     /**
