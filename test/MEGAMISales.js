@@ -516,6 +516,10 @@ describe("MEGAMISales", function () {
     });
 
     // --- test withdraw ---
+    it("Should fail to set invalid address to FundManager", async function() {
+        await expect(auction.setFundManagerContract(AddressZero)).to.be.revertedWith("invalid address");
+    })
+      
     it("Should be able to update FundManager", async function() {
         await expect(auction.setFundManagerContract(other.address)).to.be.not.reverted;
     })

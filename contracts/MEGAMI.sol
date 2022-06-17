@@ -118,6 +118,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      * @param newDefaultRoyaltiesReceipientAddress The address of the new royalty receipient.
      */
     function setDefaultRoyaltiesReceipientAddress(address payable newDefaultRoyaltiesReceipientAddress) external onlyOwner {
+        require(newDefaultRoyaltiesReceipientAddress != address(0), "invalid address");
         defaultRoyaltiesReceipientAddress = newDefaultRoyaltiesReceipientAddress;
     }
 
@@ -155,6 +156,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         external
         onlyOwner
     {
+        require(contractAddr != address(0), "invalid address");
         fundManager = payable(contractAddr);
     } 
 

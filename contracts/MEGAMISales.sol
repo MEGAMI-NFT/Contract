@@ -265,6 +265,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         external
         onlyOwner
     {
+        require(contractAddr != address(0), "invalid address");
         fundManager = payable(contractAddr);
     } 
 
