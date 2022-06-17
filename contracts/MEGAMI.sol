@@ -132,6 +132,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      * @param newDefaultPercentageBasisPoints The new percentagy basis points of the loyalty.
      */
     function setDefaultPercentageBasisPoints(uint96 newDefaultPercentageBasisPoints) external onlyOwner {
+        require(newDefaultPercentageBasisPoints < HUNDRED_PERCENT_IN_BASIS_POINTS, "must be less than 100%");
         defaultPercentageBasisPoints = newDefaultPercentageBasisPoints;
     }
 
