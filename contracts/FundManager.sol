@@ -55,11 +55,9 @@ contract FundManager is Ownable {
 
         uint256 sendingAmount = address(this).balance;
         uint256 receiversLength = _fundReceivers.length;
-        uint256 totalSent = 0;
         if(receiversLength > 1) {
             for(uint256 i = 1; i < receiversLength;) {
                 uint256 transferAmount = (sendingAmount * _fundReceivers[i].sharePercentageBasisPoints) / 10000;
-                totalSent += transferAmount;
                 (bool sent, ) = _fundReceivers[i].receiver.call{value: transferAmount}("");
                 require(sent, "transfer failed");
                 unchecked { ++i; }
@@ -67,7 +65,7 @@ contract FundManager is Ownable {
         }
 
         // Remainder is sent to the first receiver
-        (bool sentRemainder, ) = _fundReceivers[0].receiver.call{value: sendingAmount - totalSent}("");
+        (bool sentRemainder, ) = _fundReceivers[0].receiver.call{value: address(this).balance}("");
         require(sentRemainder, "transfer failed");
     }
 
