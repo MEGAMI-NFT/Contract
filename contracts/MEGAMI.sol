@@ -58,6 +58,11 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     uint256 private constant HUNDRED_PERCENT_IN_BASIS_POINTS = 10000;
 
     /**
+     * @dev Max royalty this contract allows to set. It's 15% in the basis points.
+     */
+    uint256 private constant MAX_ROYALTY_BASIS_POINTS = 1500;
+
+    /**
      * @dev Constractor of MEGAMI contract. Setting the fund manager and royalty recipient.
      * @param fundManagerContractAddress Address of the contract managing funds.
      */
@@ -132,7 +137,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      * @param newDefaultPercentageBasisPoints The new percentagy basis points of the loyalty.
      */
     function setDefaultPercentageBasisPoints(uint96 newDefaultPercentageBasisPoints) external onlyOwner {
-        require(newDefaultPercentageBasisPoints < HUNDRED_PERCENT_IN_BASIS_POINTS, "must be less than 100%");
+        require(newDefaultPercentageBasisPoints <= MAX_ROYALTY_BASIS_POINTS, "must be less than or equal to 15%");
         defaultPercentageBasisPoints = newDefaultPercentageBasisPoints;
     }
 
