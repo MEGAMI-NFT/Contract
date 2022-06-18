@@ -53,6 +53,11 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     address payable private fundManager;
 
     /**
+     * @dev 100% in bases point
+     */
+    uint256 private constant HUNDRED_PERCENT_IN_BASIS_POINTS = 10000;
+
+    /**
      * @dev Constractor of MEGAMI contract. Setting the fund manager and royalty recipient.
      * @param fundManagerContractAddress Address of the contract managing funds.
      */
@@ -118,6 +123,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      * @param newDefaultRoyaltiesReceipientAddress The address of the new royalty receipient.
      */
     function setDefaultRoyaltiesReceipientAddress(address payable newDefaultRoyaltiesReceipientAddress) external onlyOwner {
+        require(newDefaultRoyaltiesReceipientAddress != address(0), "invalid address");
         defaultRoyaltiesReceipientAddress = newDefaultRoyaltiesReceipientAddress;
     }
 
@@ -126,6 +132,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      * @param newDefaultPercentageBasisPoints The new percentagy basis points of the loyalty.
      */
     function setDefaultPercentageBasisPoints(uint96 newDefaultPercentageBasisPoints) external onlyOwner {
+        require(newDefaultPercentageBasisPoints < HUNDRED_PERCENT_IN_BASIS_POINTS, "must be less than 100%");
         defaultPercentageBasisPoints = newDefaultPercentageBasisPoints;
     }
 
@@ -144,7 +151,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      * @param _salePrice The sale price of the token that royality is being calculated.
      */
     function royaltyInfo(uint256, uint256 _salePrice) external view returns (address receiver, uint256 royaltyAmount) {
-        return (defaultRoyaltiesReceipientAddress, (_salePrice * defaultPercentageBasisPoints) / 10000);
+        return (defaultRoyaltiesReceipientAddress, (_salePrice * defaultPercentageBasisPoints) / HUNDRED_PERCENT_IN_BASIS_POINTS);
     }
      
     /**
@@ -155,6 +162,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         external
         onlyOwner
     {
+        require(contractAddr != address(0), "invalid address");
         fundManager = payable(contractAddr);
     } 
 
@@ -164,7 +172,9 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      */
     function emergencyWithdraw(address recipient) external onlyOwner {
         require(recipient != address(0), "recipient shouldn't be 0");
-        require(payable(recipient).send(address(this).balance), "failed to withdraw");
+
+        (bool sent, ) = payable(recipient).call{value: address(this).balance}("");
+        require(sent, "failed to withdraw");
     }
 
     /**
@@ -191,7 +201,6 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
      * @param amount uint256 the amount to send
      */
     function forwardERC20s(IERC20 token, uint256 amount) public onlyOwner {
-        require(address(msg.sender) != address(0));
         token.transfer(msg.sender, amount);
     }
 

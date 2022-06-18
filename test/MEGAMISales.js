@@ -313,6 +313,27 @@ describe("MEGAMISales", function () {
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 100);
     });
 
+    it("DA mint should return overpaid amount if provided eth is more than current price", async function () {     
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 24 hours ago
+        await auction.setAuctionStartTime(now - (24 * 60 * 60));
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        // Mint token ID 100 with 1 mintlist spot
+        const signature = await generateSignature(minter.address, 1);
+        const tx = auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.2')});
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 100);
+
+        // Minter should get charged only current price and get refunded the overpaid amount
+        await expect(await tx).to.changeEtherBalance(minter, parseEther('-0.08'));
+    }); 
+
     it("DA mint should fail because of wrong address", async function () {
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
@@ -466,8 +487,15 @@ describe("MEGAMISales", function () {
         // Make the public sale active 
         await auction.setPublicSaleActive(true);
 
-        await expect(auction.connect(minter).mintPublic(10, {value: parseEther('0.05')})).to.be.revertedWith("Did not send enough eth.");
+        await expect(auction.connect(minter).mintPublic(10, {value: parseEther('0.05')})).to.be.revertedWith("Incorrect amount of eth.");
     }); 
+
+    it("public mint should fail if too much value is provided", async function () { 
+        // Make the public sale active 
+        await auction.setPublicSaleActive(true);
+
+        await expect(auction.connect(minter).mintPublic(10, {value: parseEther('0.15')})).to.be.revertedWith("Incorrect amount of eth.");
+    });     
 
     it("public mint should success", async function () { 
         // Make the public sale active 
@@ -488,12 +516,17 @@ describe("MEGAMISales", function () {
     });
 
     // --- test withdraw ---
+    it("Should fail to set invalid address to FundManager", async function() {
+        await expect(auction.setFundManagerContract(AddressZero)).to.be.revertedWith("invalid address");
+    })
+      
     it("Should be able to update FundManager", async function() {
         await expect(auction.setFundManagerContract(other.address)).to.be.not.reverted;
     })
     
     it("Should move fund to FundManager", async function() {
         // Give 100 ETH to the contract through public mint
+        await expect(auction.setPublicSalePrice(parseEther("100"))).to.be.not.reverted;
         await auction.setPublicSaleActive(true);
         await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
   
@@ -507,6 +540,7 @@ describe("MEGAMISales", function () {
 
     it("emergencyWithdraw should send fund to owner", async function() {
         // Give 100 ETH to the contract through public mint
+        await expect(auction.setPublicSalePrice(parseEther("100"))).to.be.not.reverted;
         await auction.setPublicSaleActive(true);
         await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
   
@@ -520,6 +554,7 @@ describe("MEGAMISales", function () {
 
     it("emergencyWithdraw should faild if recipient is 0", async function() {
         // Give 100 ETH to the contract through public mint
+        await expect(auction.setPublicSalePrice(parseEther("100"))).to.be.not.reverted;
         await auction.setPublicSaleActive(true);
         await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
     

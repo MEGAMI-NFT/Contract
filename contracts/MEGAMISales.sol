@@ -191,9 +191,17 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         // Validate token ID
         require(tokenId < TOTAL_SUPPLY, "total mint limit");
 
+        // Get current mint price
         uint256 _currentPrice = currentPrice(tokenId);
 
+        // Validate the paid amount
         require(msg.value >= _currentPrice, "Did not send enough eth.");
+
+        // Send back overpaid amount if minter sent more than _currentPrice
+        if (msg.value > _currentPrice) {
+            (bool sent, ) = msg.sender.call{value: msg.value - _currentPrice}("");
+            require(sent, "failed to send back fund");
+        }
 
         // Increment used ML spots
         userToUsedMLs[msg.sender] += 1;
@@ -215,7 +223,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      */
     function mintPublic(uint256 tokenId) external payable callerIsUser nonReentrant {
         require(publicSaleActive, "Public sale isn't active");
-        require(msg.value >= publicSalePrice, "Did not send enough eth.");
+        require(msg.value == publicSalePrice, "Incorrect amount of eth.");
 
         megamiToken.mint(tokenId, msg.sender);
     }
@@ -257,6 +265,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         external
         onlyOwner
     {
+        require(contractAddr != address(0), "invalid address");
         fundManager = payable(contractAddr);
     } 
 
@@ -266,7 +275,9 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      */
     function emergencyWithdraw(address recipient) external onlyOwner {
         require(recipient != address(0), "recipient shouldn't be 0");
-        require(payable(recipient).send(address(this).balance), "failed to withdraw");
+
+        (bool sent, ) = payable(recipient).call{value: address(this).balance}("");
+        require(sent, "failed to withdraw");
     }
 
     /**

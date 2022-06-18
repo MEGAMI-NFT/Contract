@@ -7,6 +7,11 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @dev Implementation of the Fund Manager contract that allows funds to split to contributors.
  */
 contract FundManager is Ownable {
+
+    /**
+     * @dev 100% in bases point
+     */
+    uint256 private constant HUNDRED_PERCENT_IN_BASIS_POINTS = 10000;
     
     /**
      * @dev Struct managing the receivers and their share (percentage basis points).
@@ -43,7 +48,7 @@ contract FundManager is Ownable {
 
             unchecked { ++i; }
         }
-        require(totalPercentageBasisPoints == 10000, "total share percentage basis point isn't 10000");
+        require(totalPercentageBasisPoints == HUNDRED_PERCENT_IN_BASIS_POINTS, "total share percentage basis point isn't 10000");
     }
 
     /**
@@ -55,19 +60,18 @@ contract FundManager is Ownable {
 
         uint256 sendingAmount = address(this).balance;
         uint256 receiversLength = _fundReceivers.length;
-        uint256 totalSent = 0;
         if(receiversLength > 1) {
             for(uint256 i = 1; i < receiversLength;) {
-                uint256 transferAmount = (sendingAmount * _fundReceivers[i].sharePercentageBasisPoints) / 10000;
-                totalSent += transferAmount;
-                require(_fundReceivers[i].receiver.send(transferAmount), "transfer failed");
-
+                uint256 transferAmount = (sendingAmount * _fundReceivers[i].sharePercentageBasisPoints) / HUNDRED_PERCENT_IN_BASIS_POINTS;
+                (bool sent, ) = _fundReceivers[i].receiver.call{value: transferAmount}("");
+                require(sent, "transfer failed");
                 unchecked { ++i; }
             }
         }
 
         // Remainder is sent to the first receiver
-        require(_fundReceivers[0].receiver.send(sendingAmount - totalSent), "transfer failed");
+        (bool sentRemainder, ) = _fundReceivers[0].receiver.call{value: address(this).balance}("");
+        require(sentRemainder, "transfer failed");
     }
 
     /**
@@ -76,7 +80,9 @@ contract FundManager is Ownable {
      */
     function emergencyWithdraw(address recipient) external onlyOwner {
         require(recipient != address(0), "recipient shouldn't be 0");
-        require(payable(recipient).send(address(this).balance), "failed to withdraw");
+
+        (bool sent, ) = payable(recipient).call{value: address(this).balance}("");
+        require(sent, "failed to withdraw");
     }
 
     /**

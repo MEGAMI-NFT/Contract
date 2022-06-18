@@ -68,6 +68,16 @@ beforeEach(async function () {
     });
 
     // --- Royalty tests ---   
+    it("Should fail to set invalid address to the defaultRoyaltiesReceipientAddress", async function () {
+      // set new defaultRoyaltiesReceipientAddress with invalid address
+      await expect(megami.setDefaultRoyaltiesReceipientAddress(AddressZero)).to.revertedWith("invalid address");;
+    });   
+
+    it("Should fail to set invalid percentage to the defaultPercentageBasisPoints", async function () {
+      // set new defaultPercentageBasisPoints
+      await expect(megami.setDefaultPercentageBasisPoints(10000)).to.revertedWith("must be less than 100%");
+    });  
+
     it("Should return correct royalty through getRaribleV2Royalties", async function () {
       // get royalty through Rarible's interface
       royalty = await megami.getRaribleV2Royalties(1);
@@ -154,6 +164,10 @@ beforeEach(async function () {
     });   
 
     // --- test withdraw ---
+    it("Should fail to set invalid address to FundManager", async function() {
+      await expect(megami.setFundManagerContract(AddressZero)).to.be.revertedWith("invalid address");
+    })
+    
     it("Should be able to update FundManager", async function() {
       await expect(megami.setFundManagerContract(other.address)).to.be.not.reverted;
     })
