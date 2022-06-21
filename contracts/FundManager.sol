@@ -37,6 +37,7 @@ contract FundManager is Ownable {
     function setFeeReceivers(FundReceiver[] calldata receivers) external onlyOwner {
         uint256 receiversLength = receivers.length;
         require(receiversLength > 0, "at least one receiver is necessary");
+        require(receiversLength <= 50, "too many receivers");
         uint256 totalPercentageBasisPoints = 0;
         delete _fundReceivers;
         for(uint256 i = 0; i < receiversLength;) {

@@ -165,7 +165,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
             "DA has not started!"
         );        
 
-        require(block.timestamp <= getAuctoinEndTime(), "DA is finished");
+        require(block.timestamp <= getAuctionEndTime(), "DA is finished");
 
         // Validate Mintlist
         // Message format is 1 byte shifted address + number of MLs (1 byte)
@@ -356,7 +356,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     /**
      * @dev Returns the end time of the auction in unix timestamp format.
      */
-    function getAuctoinEndTime() public view returns (uint256) {
+    function getAuctionEndTime() public view returns (uint256) {
         return auctionStartingTimestamp + AUCTION_LENGTH;
     }
     

@@ -38,6 +38,24 @@ beforeEach(async function () {
         await (expect(fundManager.setFeeReceivers([[r1.address, 2000], [r2.address, 2000], [r3.address, 2000]]))).to.be.revertedWith("total share percentage basis point isn't 10000");
       })
 
+      it("Should fail to set more than 50 receivers", async function() {
+        let receivers = [];
+        for(i = 0; i < 50; i++) {
+          receivers.push([r1.address, 100]);
+        }
+        receivers.push([r1.address, 5000]);
+        await expect(fundManager.setFeeReceivers(receivers)).to.be.revertedWith("too many receivers");
+      });
+
+      it("Should be able to set up to 50 receivers", async function() {
+        let receivers = [];
+        for(i = 0; i < 49; i++) {
+          receivers.push([r1.address, 100]);
+        }
+        receivers.push([r1.address, 5100]);
+        await expect(fundManager.setFeeReceivers(receivers)).to.not.be.reverted;
+      });
+
     // --- test withdraw ---
     it("Should distribute fee to feeReceivers", async function() {
       // Give 100 ETH to the contract

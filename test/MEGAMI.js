@@ -75,8 +75,13 @@ beforeEach(async function () {
 
     it("Should fail to set invalid percentage to the defaultPercentageBasisPoints", async function () {
       // set new defaultPercentageBasisPoints
-      await expect(megami.setDefaultPercentageBasisPoints(10000)).to.revertedWith("must be less than 100%");
+      await expect(megami.setDefaultPercentageBasisPoints(1501)).to.revertedWith("must be less than or equal to 15%");
     });  
+
+    it("Should be able to set the royalty percentage up-to 15%", async function () {
+      // set new defaultPercentageBasisPoints
+      await expect(megami.setDefaultPercentageBasisPoints(1500)).to.not.be.reverted;
+    });     
 
     it("Should return correct royalty through getRaribleV2Royalties", async function () {
       // get royalty through Rarible's interface
