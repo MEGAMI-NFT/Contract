@@ -103,7 +103,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     /**
      * @dev Address of the fund manager contract.
      */
-    address payable private fundManager;
+    address private fundManager;
 
     /**
      * @dev Address of the MEGAMI token contract.
@@ -266,7 +266,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         onlyOwner
     {
         require(contractAddr != address(0), "invalid address");
-        fundManager = payable(contractAddr);
+        fundManager = contractAddr;
     } 
 
     /**
@@ -276,7 +276,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     function emergencyWithdraw(address recipient) external onlyOwner {
         require(recipient != address(0), "recipient shouldn't be 0");
 
-        (bool sent, ) = payable(recipient).call{value: address(this).balance}("");
+        (bool sent, ) = recipient.call{value: address(this).balance}("");
         require(sent, "failed to withdraw");
     }
 
@@ -284,7 +284,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      * @dev Move all of funds to the fund manager contract.
      */
     function moveFundToManager() external onlyOwner {
-        (bool sent, ) = address(fundManager).call{value: address(this).balance}("");
+        (bool sent, ) = fundManager.call{value: address(this).balance}("");
         require(sent, "failed to move fund to FundManager contract");
     }
 
