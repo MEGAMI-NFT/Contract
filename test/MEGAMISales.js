@@ -26,6 +26,19 @@ async function generateSignature(address, num_of_ml) {
     return signature;
 }
 
+async function mintUntilNonTeamLimit(auction, owner) {
+    // Mint until 9550 (max of non team mint)
+    const mintUnit = 100;
+    for(i = 0; i < 9500; i += mintUnit ) {
+        const ids = [...Array(mintUnit).keys()].map(x => x + i);
+        await expect(auction.connect(owner).mintTeam(minter.address, ids)).to.be.not.reverted;
+        expect(await auction.totalSold()).to.equal(i+mintUnit);
+    }
+    const ids = [...Array(50).keys()].map(x => x + 9500);
+    await expect(auction.connect(owner).mintTeam(owner.address, ids)).to.be.not.reverted;
+    expect(await auction.totalSold()).to.equal(9550);
+}
+
 describe("MEGAMISales", function () {
     let auction;
     let megamiContract;
@@ -296,6 +309,8 @@ describe("MEGAMISales", function () {
     });    
 
     it("should be able to mint", async function () {
+        expect(await auction.totalSold()).to.equal(0);
+
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
         // Set signer 
@@ -311,6 +326,8 @@ describe("MEGAMISales", function () {
         const signature = await generateSignature(minter.address, 1);
         const tx = auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.2')});
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 100);
+
+        expect(await auction.totalSold()).to.equal(1);
     });
 
     it("DA mint should return overpaid amount if provided eth is more than current price", async function () {     
@@ -442,7 +459,7 @@ describe("MEGAMISales", function () {
         await auction.setDutchActionActive(true);
         
         const signature = await generateSignature(minter.address, 1);
-        await expect(auction.connect(minter).mintDA(signature, 1, 10000, {value: parseEther('0.2')})).to.be.revertedWith("total mint limit");
+        await expect(auction.connect(minter).mintDA(signature, 1, 10000, {value: parseEther('0.2')})).to.be.revertedWith("invalid token id");
     });    
     
     it("DA mint should fail if provided eth is insufficient", async function () {     
@@ -460,15 +477,51 @@ describe("MEGAMISales", function () {
         const signature = await generateSignature(minter.address, 1);
         await expect(auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.1')})).to.be.revertedWith("Did not send enough eth.");
     });    
+    
+    it("DM mint should fail if it's already sold out", async function () {
+        await mintUntilNonTeamLimit(auction, owner);
+
+        // Prepare DA
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 1 sec 
+        await auction.setAuctionStartTime(now - 1);
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        const signature = await generateSignature(minter.address, 1);
+        await expect(auction.connect(minter).mintDA(signature, 1, 9550, {value: parseEther('0.2')})).to.be.revertedWith("sold out");
+    });
 
     // --- teamMint ---
-    it("should be able to mint multiple tokens though mintTeam", async function () {     
+    it("should be able to mint multiple tokens though mintTeam", async function () {   
+        expect(await auction.totalSold()).to.equal(0);  
+        
         // Mint token ID 10, 11, and 15
         const tx = auction.connect(owner).mintTeam(minter.address, [10, 11, 15]);
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 11);
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 15);
+
+        expect(await auction.totalSold()).to.equal(3);
     });    
+
+    it("should be able to mint until max supply even after sold out", async function () {
+        await mintUntilNonTeamLimit(auction, owner);
+
+        const mintUnit = 50;
+        for(i = 9550; i < 10000; i += mintUnit) {
+            const ids = [...Array(mintUnit).keys()].map(x => x + i);
+            await expect(auction.connect(owner).mintTeam(minter.address, ids)).to.be.not.reverted;
+            expect(await auction.totalSold()).to.equal(i+mintUnit);
+        }
+
+        expect(await auction.totalSold()).to.equal(10000);
+    })
 
     it("teamMint should fail if the receiver is zero", async function () {     
         await expect(auction.connect(owner).mintTeam(AddressZero, [10, 11, 15])).to.be.revertedWith("recipient address is necessary");
@@ -497,12 +550,25 @@ describe("MEGAMISales", function () {
         await expect(auction.connect(minter).mintPublic(10, {value: parseEther('0.15')})).to.be.revertedWith("Incorrect amount of eth.");
     });     
 
+    it("public mint should faild if it's already sold out", async function () {
+        await mintUntilNonTeamLimit(auction, owner);
+
+        // Make the public sale active 
+        await auction.setPublicSaleActive(true);
+
+        await expect(auction.connect(minter).mintPublic(9550, {value: parseEther('0.1')})).to.be.revertedWith("sold out");
+    })
+
     it("public mint should success", async function () { 
+        expect(await auction.totalSold()).to.equal(0);
+        
         // Make the public sale active 
         await auction.setPublicSaleActive(true);
 
         const tx = auction.connect(minter).mintPublic(10, {value: parseEther('0.1')});
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
+
+        expect(await auction.totalSold()).to.equal(1);
     }); 
 
     it("public mint price can be changed", async function () {

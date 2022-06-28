@@ -17,7 +17,12 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     /**
      * @notice Total supply of MEGAMI tokens.
      */
-    uint256 public constant TOTAL_SUPPLY = 10000;
+    uint256 public constant MAX_SUPPLY = 10000;
+
+    /**
+     * @notice Reserved MEGAMI tokens reserved for the team.
+     */
+    uint256 public constant RESERVED_TOKENS_FOR_TEAM = 450;
 
     /**
      * @notice Length of the auction (seconds)
@@ -99,6 +104,11 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      * @notice The price of MEGAMI tokens in the public sale. 
      */
     uint256 public publicSalePrice = 0.1 ether;
+
+    /**
+     * @notice Total number of MEGAMI tokens sold so far.
+     */
+    uint256 public totalSold = 0;
 
     /**
      * @dev Address of the fund manager contract.
@@ -189,7 +199,10 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         );
 
         // Validate token ID
-        require(tokenId < TOTAL_SUPPLY, "total mint limit");
+        require(tokenId < MAX_SUPPLY, "invalid token id");
+
+        // Check total sold
+        require(totalSold < (MAX_SUPPLY - RESERVED_TOKENS_FOR_TEAM), "sold out");
 
         // Get current mint price
         uint256 _currentPrice = currentPrice(tokenId);
@@ -205,6 +218,9 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
 
         // Increment used ML spots
         userToUsedMLs[msg.sender] += 1;
+
+        // Increment total sold
+        totalSold += 1;
 
         megamiToken.mint(tokenId, msg.sender);
     }
@@ -225,6 +241,12 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         require(publicSaleActive, "Public sale isn't active");
         require(msg.value == publicSalePrice, "Incorrect amount of eth.");
 
+        // Check total sold
+        require(totalSold < (MAX_SUPPLY - RESERVED_TOKENS_FOR_TEAM), "sold out");
+
+        // Increment total sold
+        totalSold += 1;
+
         megamiToken.mint(tokenId, msg.sender);
     }
 
@@ -237,6 +259,9 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         require(address(recipient) != address(0), "recipient address is necessary");
         uint256 count = tokenIds.length;
         for (uint256 i = 0; i < count;) {
+            // Increment total sold
+            totalSold += 1;
+
             megamiToken.mint(tokenIds[i], recipient);
             unchecked { ++i; }
         }
@@ -381,6 +406,6 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      * @dev Return the amount of tokens being released in each release wave.
      */
     function getSupplyPerWave() private pure returns (uint256) {
-        return TOTAL_SUPPLY / TOTAL_RELEASE_WAVES;
+        return MAX_SUPPLY / TOTAL_RELEASE_WAVES;
     }
 }

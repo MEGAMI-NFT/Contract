@@ -13,6 +13,9 @@ const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
  */
 module.exports = {
   solidity: "0.8.7",
+  mocha: {
+    timeout: 120000000 // 2 minuts
+  },
   networks: {
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_API_KEY}`,
