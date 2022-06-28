@@ -41,8 +41,8 @@ describe("MEGAMISales", function () {
         const MegamiFactory = await ethers.getContractFactory('MEGAMI');
         megamiContract = await MegamiFactory.deploy(fundManagerContract.address);
 
-        const MegamiSaleFactory = await hre.ethers.getContractFactory("MEGAMISales");
-        auction = await MegamiSaleFactory.deploy(megamiContract.address, fundManagerContract.address);
+        const MegamiSalesFactory = await hre.ethers.getContractFactory("MEGAMISales");
+        auction = await MegamiSalesFactory.deploy(megamiContract.address, fundManagerContract.address);
 
         // Setup Megami Sale as a SalesContract
         await megamiContract.setSalesContract(auction.address);
@@ -536,6 +536,15 @@ describe("MEGAMISales", function () {
 
         // contract's wallet balance should be 0
         expect((await provider.getBalance(auction.address)).toString()).to.equal("0");
+    })
+
+    it("Should fail to move fund to FundManager if it's not set", async function() {
+        // Deploy new contract for this test
+        const TestMegamiSalesFactory = await hre.ethers.getContractFactory("MEGAMISales");
+        testAuction = await TestMegamiSalesFactory.deploy(megamiContract.address, AddressZero);  // Wrong fund manager
+        await testAuction.deployed();
+        
+        await expect(testAuction.moveFundToManager()).to.be.revertedWith("fundManager shouldn't be 0");
     })
 
     it("emergencyWithdraw should send fund to owner", async function() {

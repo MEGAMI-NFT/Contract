@@ -284,6 +284,8 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      * @dev Move all of funds to the fund manager contract.
      */
     function moveFundToManager() external onlyOwner {
+        require(fundManager != address(0), "fundManager shouldn't be 0");
+        
         (bool sent, ) = fundManager.call{value: address(this).balance}("");
         require(sent, "failed to move fund to FundManager contract");
     }

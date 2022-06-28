@@ -179,7 +179,9 @@ beforeEach(async function () {
   
     it("Should move fund to FundManager", async function() {
       // Give 100 ETH to the contract through public mint
-      await minter.sendTransaction({to: megami.address, value: parseEther("100")});      const tx = megami.moveFundToManager();
+      await minter.sendTransaction({to: megami.address, value: parseEther("100")});      
+      
+      const tx = megami.moveFundToManager();
       await expect(tx).to.be.not.reverted;
       await expect(await tx).to.changeEtherBalance(fundManagerContract, parseEther("100"));
 
@@ -187,14 +189,13 @@ beforeEach(async function () {
       expect((await provider.getBalance(megami.address)).toString()).to.equal("0");
   })
 
-    it("Should move fund to FundManager", async function() {
-      // Give 100 ETH to the contract through public mint
-      await minter.sendTransaction({to: megami.address, value: parseEther("100")});      const tx = megami.moveFundToManager();
-      await expect(tx).to.be.not.reverted;
-      await expect(await tx).to.changeEtherBalance(fundManagerContract, parseEther("100"));
-
-      // contract's wallet balance should be 0
-      expect((await provider.getBalance(megami.address)).toString()).to.equal("0");
+  it("Should fail to move fund to FundManager if it's not set", async function() {
+      // Deploy new contract for this test
+      const TestMegami = await hre.ethers.getContractFactory("MEGAMI");
+      testMegami = await TestMegami.deploy(AddressZero);  // Wrong fund manager
+      await testMegami.deployed();
+      
+      await expect(testMegami.moveFundToManager()).to.be.revertedWith("fundManager shouldn't be 0");
   })
 
   it("emergencyWithdraw should send fund to owner", async function() {
