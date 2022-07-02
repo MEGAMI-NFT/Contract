@@ -301,7 +301,7 @@ describe("MEGAMISales", function () {
 
     // --- mintDA ---
     it("auction is deactivated by default", async function () {
-        expect(await auction.auctionActive()).to.equal(false);
+        expect(await auction.getDutchAuctionActive()).to.equal(false);
     });
 
     it("auction can't be activated without signer", async function () {
@@ -385,7 +385,24 @@ describe("MEGAMISales", function () {
         await expect(auction.connect(minter).mintDA(signature, 2, 100, {value: parseEther('0.2')})).to.be.revertedWith("Signer address mismatch.");
     });
 
-    it("should not be able to mint more than ml spots", async function () {
+    it("DA mint should fail if waitlister try to mint", async function () {
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 1 sec ago
+        await auction.setAuctionStartTime(now - 1);
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        // Mint token ID 100 with 0 mintlist spot
+        const signature = await generateSignature(minter.address, 0);  // 0 mintlist spot == waitlister
+        await expect(auction.connect(minter).mintDA(signature, 0, 100, {value: parseEther('0.2')})).to.be.revertedWith("All ML spots have been consumed");
+    });
+    
+    it("DA mint should faild if minter tries to mint more than ml spots", async function () {
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
 
         // Set signer 
@@ -531,9 +548,99 @@ describe("MEGAMISales", function () {
         await expect(auction.connect(minter).mintTeam(minter.address, [10, 11, 15])).to.be.revertedWith("Ownable: caller is not the owner");
     }); 
 
+    // --- privateMint ---
+    it("private mint shouldn't be possible until it becomes active", async function () {  
+        // Generate a signature for a waitlist minter
+        const signature = await generateSignature(minter.address, 0);
+        
+        await expect(auction.connect(minter).mintPrivate(signature, 0, 100)).to.be.revertedWith("Private sale isn't active");
+    }); 
+
+    it("private mint status can be changed", async function () {     
+        expect(await auction.getPrivateSaleActive()).to.be.equal(false);
+
+        // Make the public sale active 
+        await auction.setPrivateSaleActive(true);
+
+        expect(await auction.getPrivateSaleActive()).to.be.equal(true);
+    }); 
+
+    it("private mint should fail if enough value isn't provided", async function () { 
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+        
+        // Make the private sale active 
+        await auction.setPrivateSaleActive(true);
+
+        // Generate a signature for a waitlist minter
+        const signature = await generateSignature(minter.address, 0);
+
+        await expect(auction.connect(minter).mintPrivate(signature, 0, 100, {value: parseEther('0.05')})).to.be.revertedWith("Incorrect amount of eth.");
+    }); 
+
+    it("private mint should fail because of wrong address", async function () {
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // Make the private sale active 
+        await auction.setPrivateSaleActive(true);
+
+        // Generate a signature for a waitlist minter
+        const signature = await generateSignature(minter.address, 0);
+        
+        // Mint token ID 100
+        await expect(auction.connect(other).mintPrivate(signature, 0, 100, {value: parseEther('0.1')})).to.be.revertedWith("Signer address mismatch.");
+    });
+
+    it("private mint should fail because of wrong ml spots", async function () {
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // Make the private sale active 
+        await auction.setPrivateSaleActive(true);
+
+        // Generate a signature for a waitlist minter
+        const signature = await generateSignature(minter.address, 0);
+        
+        // Mint token ID 100
+        await expect(auction.connect(minter).mintPrivate(signature, 1, 100, {value: parseEther('0.1')})).to.be.revertedWith("Signer address mismatch.");
+    });
+
+    it("private mint should success", async function () { 
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // Make the private sale active 
+        await auction.setPrivateSaleActive(true);
+
+        // Generate a signature for a waitlist minter
+        const signature = await generateSignature(minter.address, 0);
+
+        // mint one
+        const tx = auction.connect(minter).mintPrivate(signature, 0, 100, {value: parseEther('0.1')});
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 100);
+
+        expect(await auction.totalSold()).to.equal(1);
+
+        // mint another
+        const tx2 = auction.connect(minter).mintPrivate(signature, 0, 101, {value: parseEther('0.1')});
+        await expect(tx2).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 101);
+
+        expect(await auction.totalSold()).to.equal(2);
+    }); 
+    
     // --- publicMint ---
     it("public mint shouldn't be possible until it becomes active", async function () {     
         await expect(auction.connect(minter).mintPublic(10)).to.be.revertedWith("Public sale isn't active");
+    }); 
+
+    it("public mint status can be changed", async function () {     
+        expect(await auction.getPublicSaleActive()).to.be.equal(false);
+
+        // Make the public sale active 
+        await auction.setPublicSaleActive(true);
+
+        expect(await auction.getPublicSaleActive()).to.be.equal(true);
     }); 
 
     it("public mint should fail if enough value isn't provided", async function () { 
@@ -571,14 +678,14 @@ describe("MEGAMISales", function () {
         expect(await auction.totalSold()).to.equal(1);
     }); 
 
-    it("public mint price can be changed", async function () {
-        expect(await auction.publicSalePrice()).to.equal(parseEther("0.1"));
+    it("fixed sale price can be changed", async function () {
+        expect(await auction.fixedSalePrice()).to.equal(parseEther("0.1"));
 
         // Update the public sale price
-        await expect(auction.setPublicSalePrice(parseEther("0.2"))).to.be.not.reverted;
+        await expect(auction.setFixedSalePrice(parseEther("0.2"))).to.be.not.reverted;
 
         // Confirm the sale price
-        expect(await auction.publicSalePrice()).to.equal(parseEther("0.2"));
+        expect(await auction.fixedSalePrice()).to.equal(parseEther("0.2"));
     });
 
     // --- test withdraw ---
@@ -592,7 +699,7 @@ describe("MEGAMISales", function () {
     
     it("Should move fund to FundManager", async function() {
         // Give 100 ETH to the contract through public mint
-        await expect(auction.setPublicSalePrice(parseEther("100"))).to.be.not.reverted;
+        await expect(auction.setFixedSalePrice(parseEther("100"))).to.be.not.reverted;
         await auction.setPublicSaleActive(true);
         await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
   
@@ -615,7 +722,7 @@ describe("MEGAMISales", function () {
 
     it("emergencyWithdraw should send fund to owner", async function() {
         // Give 100 ETH to the contract through public mint
-        await expect(auction.setPublicSalePrice(parseEther("100"))).to.be.not.reverted;
+        await expect(auction.setFixedSalePrice(parseEther("100"))).to.be.not.reverted;
         await auction.setPublicSaleActive(true);
         await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
   
@@ -629,7 +736,7 @@ describe("MEGAMISales", function () {
 
     it("emergencyWithdraw should faild if recipient is 0", async function() {
         // Give 100 ETH to the contract through public mint
-        await expect(auction.setPublicSalePrice(parseEther("100"))).to.be.not.reverted;
+        await expect(auction.setFixedSalePrice(parseEther("100"))).to.be.not.reverted;
         await auction.setPublicSaleActive(true);
         await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
     
