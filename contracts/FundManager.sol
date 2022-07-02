@@ -82,7 +82,7 @@ contract FundManager is Ownable {
     function emergencyWithdraw(address recipient) external onlyOwner {
         require(recipient != address(0), "recipient shouldn't be 0");
 
-        (bool sent, ) = payable(recipient).call{value: address(this).balance}("");
+        (bool sent, ) = recipient.call{value: address(this).balance}("");
         require(sent, "failed to withdraw");
     }
 
