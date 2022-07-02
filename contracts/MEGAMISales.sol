@@ -107,7 +107,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     /**
      * @notice The price of MEGAMI tokens in the private/public sale. 
      */
-    uint256 public fixedSalePrice = 0.1 ether;
+    uint256 public fixedSalePrice = 0.08 ether;
 
     /**
      * @notice Total number of MEGAMI tokens sold so far.
