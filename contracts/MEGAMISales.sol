@@ -15,6 +15,15 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     using ECDSA for bytes32;
 
     /**
+     * @dev The struct holding the status of each sale
+     */
+    struct SalesActiveStatus {
+        bool auctionActive;
+        bool privateSaleActive;
+        bool publicSaleActive;
+    }
+
+    /**
      * @notice Total supply of MEGAMI tokens.
      */
     uint256 public constant MAX_SUPPLY = 10000;
@@ -85,25 +94,20 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     uint256 public constant RELEASE_WAVE_TIME_INTERVAL = 60 * 60 * 1; // Relese new wave every 1 hour
 
     /**
-     * @notice The status of the acution. 
-     */
-    bool public auctionActive = false; 
-
-    /**
      * @notice Starting time (seconds) of the auction.
      * @dev To convert into readable time https://www.unixtimestamp.com/
      */
     uint256 public auctionStartingTimestamp;
 
     /**
-     * @notice The status of the public sale. 
+     * @notice The status of each sale
      */
-    bool public publicSaleActive = false;
+    SalesActiveStatus public salesStatus = SalesActiveStatus(false, false, false);
 
     /**
-     * @notice The price of MEGAMI tokens in the public sale. 
+     * @notice The price of MEGAMI tokens in the private/public sale. 
      */
-    uint256 public publicSalePrice = 0.1 ether;
+    uint256 public fixedSalePrice = 0.08 ether;
 
     /**
      * @notice Total number of MEGAMI tokens sold so far.
@@ -167,7 +171,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      * @param tokenId Token ID being minted.
      */
     function mintDA(bytes calldata signature, uint8 mlSpots, uint256 tokenId) external payable callerIsUser nonReentrant {
-        require(auctionActive, "DA isnt active");
+        require(salesStatus.auctionActive, "DA isnt active");
         
         //Require DA started
         require(
@@ -178,19 +182,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         require(block.timestamp <= getAuctionEndTime(), "DA is finished");
 
         // Validate Mintlist
-        // Message format is 1 byte shifted address + number of MLs (1 byte)
-        uint256 message = (uint256(uint160(msg.sender)) << 8) + mlSpots;
-        
-        require(
-            mlSigner ==
-                keccak256(
-                    abi.encodePacked(
-                        "\x19Ethereum Signed Message:\n32",
-                        bytes32(message)
-                    )
-                ).recover(signature),
-            "Signer address mismatch."
-        );
+        require(verifySignature(signature, mlSpots), "Signer address mismatch.");
 
         // Check number of ML spots
         require(
@@ -226,11 +218,34 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     }
 
     /**
-     * @dev Set the price of the public sale.
-     * @param newPrice The new price of the public sale.
+     * @dev Set the price of the private/public sale.
+     * @param newPrice The new price of the private/public sale.
      */
-    function setPublicSalePrice(uint256 newPrice) external onlyOwner {
-        publicSalePrice = newPrice;
+    function setFixedSalePrice(uint256 newPrice) external onlyOwner {
+        fixedSalePrice = newPrice;
+    }
+
+    /**
+     * @dev Mint the specified MEGAMI token with public price.  
+     * @param tokenId Token ID being minted.
+     */
+    function mintPrivate(bytes calldata signature, uint8 mlSpots, uint256 tokenId) external payable callerIsUser nonReentrant {
+        require(salesStatus.privateSaleActive, "Private sale isn't active");
+
+        // Validate eligibility. 
+        // Since we don't check the number of mlSpots in Private sale, 
+        // mlSpots = 0 works as a waitlist which can mint in private sale.
+        require(verifySignature(signature, mlSpots), "Signer address mismatch.");
+
+        require(msg.value == fixedSalePrice, "Incorrect amount of eth.");
+
+        // Check total sold
+        require(totalSold < (MAX_SUPPLY - RESERVED_TOKENS_FOR_TEAM), "sold out");
+
+        // Increment total sold
+        totalSold += 1;
+
+        megamiToken.mint(tokenId, msg.sender);
     }
 
     /**
@@ -238,8 +253,8 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      * @param tokenId Token ID being minted.
      */
     function mintPublic(uint256 tokenId) external payable callerIsUser nonReentrant {
-        require(publicSaleActive, "Public sale isn't active");
-        require(msg.value == publicSalePrice, "Incorrect amount of eth.");
+        require(salesStatus.publicSaleActive, "Public sale isn't active");
+        require(msg.value == fixedSalePrice, "Incorrect amount of eth.");
 
         // Check total sold
         require(totalSold < (MAX_SUPPLY - RESERVED_TOKENS_FOR_TEAM), "sold out");
@@ -272,14 +287,42 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      */
     function setDutchActionActive(bool isActive) external onlyOwner {
         require(mlSigner != address(0), "Mintlist signer must be set before starting auction");
-        auctionActive = isActive;
+        salesStatus.auctionActive = isActive;
+    }
+
+    /**
+     * @dev Returns the active status of the auction
+     */
+    function getDutchAuctionActive() external view returns (bool) {
+        return salesStatus.auctionActive;
+    }
+
+    /**
+     * @dev Set the active status of private sale.
+     */
+    function setPrivateSaleActive(bool isActive) external onlyOwner {
+        salesStatus.privateSaleActive = isActive;
+    }
+
+    /**
+     * @dev Returns the active status of the private sale
+     */
+    function getPrivateSaleActive() external view returns (bool) {
+        return salesStatus.privateSaleActive;
     }
 
     /**
      * @dev Set the active status of public sale.
      */
     function setPublicSaleActive(bool isActive) external onlyOwner {
-        publicSaleActive = isActive;
+        salesStatus.publicSaleActive = isActive;
+    }
+
+    /**
+     * @dev Returns the active status of the public sale
+     */
+    function getPublicSaleActive() external view returns (bool) {
+        return salesStatus.publicSaleActive;
     }
     
     /**
@@ -407,5 +450,22 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      */
     function getSupplyPerWave() private pure returns (uint256) {
         return MAX_SUPPLY / TOTAL_RELEASE_WAVES;
+    }
+
+    /**
+     * @dev Verify the signature passed to the auction/private mint functions
+     */
+    function verifySignature(bytes calldata signature, uint8 mlSpots) private view returns (bool) {
+        // Message format is 1 byte shifted address + number of MLs (1 byte)
+        uint256 message = (uint256(uint160(msg.sender)) << 8) + mlSpots;
+        
+        return
+            mlSigner ==
+                keccak256(
+                    abi.encodePacked(
+                        "\x19Ethereum Signed Message:\n32",
+                        bytes32(message)
+                    )
+                ).recover(signature);
     }
 }
