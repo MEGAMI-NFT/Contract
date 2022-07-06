@@ -172,6 +172,10 @@ beforeEach(async function () {
     it("Should fail to set invalid address to FundManager", async function() {
       await expect(megami.setFundManagerContract(AddressZero)).to.be.revertedWith("invalid address");
     })
+
+    it("Should fail to update FundManager if transaction is initiated by non owner", async function() {
+      await expect(megami.connect(other).setFundManagerContract(other.address)).to.be.revertedWith("Ownable: caller is not the owner");
+    })
     
     it("Should be able to update FundManager", async function() {
       await expect(megami.setFundManagerContract(other.address)).to.be.not.reverted;
@@ -219,4 +223,14 @@ beforeEach(async function () {
     // contract's wallet balance shouldn't be changed
     expect((await provider.getBalance(megami.address)).toString()).to.equal(parseEther("100"));
   })    
+
+  it("emergencyWithdraw should faild if transaction is initiated by non-owner", async function() {
+    // Give 100 ETH to the contract through public mint
+    await minter.sendTransaction({to: megami.address, value: parseEther("100")});
+
+    await expect(megami.connect(other).emergencyWithdraw(other.address)).to.be.revertedWith("Ownable: caller is not the owner");
+
+    // contract's wallet balance shouldn't be changed
+    expect((await provider.getBalance(megami.address)).toString()).to.equal(parseEther("100"));
+  })
 });

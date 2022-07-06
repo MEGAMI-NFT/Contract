@@ -38,6 +38,10 @@ beforeEach(async function () {
         await (expect(fundManager.setFeeReceivers([[r1.address, 2000], [r2.address, 2000], [r3.address, 2000]]))).to.be.revertedWith("total share percentage basis point isn't 10000");
       })
 
+      it("Should fail to set feeReceivers if transaction is initiated by non owner", async function() {
+        await expect(fundManager.connect(r2).setFeeReceivers([[r1.address, 10000]])).to.be.revertedWith("Ownable: caller is not the owner");
+      });
+
       it("Should fail to set more than 50 receivers", async function() {
         let receivers = [];
         for(i = 0; i < 50; i++) {
@@ -149,6 +153,16 @@ beforeEach(async function () {
       // contract's wallet balance shouldn't be changed
       expect((await provider.getBalance(fundManager.address)).toString()).to.equal(parseEther("100"));
     }) 
+
+    it("emergencyWithdraw should faild if transaction is initiated by non-owner", async function() {
+      // Give 100 ETH to the contract through public mint
+      await r1.sendTransaction({to: fundManager.address, value: parseEther("100")});
+
+      await expect(fundManager.connect(r2).emergencyWithdraw(r2.address)).to.be.revertedWith("Ownable: caller is not the owner");
+
+      // contract's wallet balance shouldn't be changed
+      expect((await provider.getBalance(fundManager.address)).toString()).to.equal(parseEther("100"));
+    })
 
     // --- test ownership ---
     it("renounceOwnership should be NOP", async function () {

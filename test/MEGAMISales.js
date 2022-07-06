@@ -705,6 +705,10 @@ describe("MEGAMISales", function () {
     it("Should fail to set invalid address to FundManager", async function() {
         await expect(auction.setFundManagerContract(AddressZero)).to.be.revertedWith("invalid address");
     })
+
+    it("Should fail to update FundManager if transaction is initiated by non owner", async function() {
+        await expect(auction.connect(other).setFundManagerContract(other.address)).to.be.revertedWith("Ownable: caller is not the owner");
+    })
       
     it("Should be able to update FundManager", async function() {
         await expect(auction.setFundManagerContract(other.address)).to.be.not.reverted;
@@ -758,6 +762,18 @@ describe("MEGAMISales", function () {
         // contract's wallet balance shouldn't be changed
         expect((await provider.getBalance(auction.address)).toString()).to.equal(parseEther("100"));
     })    
+
+    it("emergencyWithdraw should faild if transaction is initiated by non-owner", async function() {
+        // Give 100 ETH to the contract through public mint
+        await expect(auction.setFixedSalePrice(parseEther("100"))).to.be.not.reverted;
+        await auction.setPublicSaleActive(true);
+        await auction.connect(minter).mintPublic(10, {value: parseEther('100')});
+
+        await expect(auction.connect(other).emergencyWithdraw(other.address)).to.be.revertedWith("Ownable: caller is not the owner");
+
+        // contract's wallet balance shouldn't be changed
+        expect((await provider.getBalance(auction.address)).toString()).to.equal(parseEther("100"));
+    })
 
     // --- test ownership ---
     it("renounceOwnership should be NOP", async function () {
