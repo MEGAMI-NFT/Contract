@@ -118,7 +118,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     { 
         require(_tokenId < MAX_SUPPLY, "can't mint more than limit");
         
-        totalSupply += 1;
+        unchecked { ++totalSupply; }
 
         _safeMint(_address, _tokenId);
     }

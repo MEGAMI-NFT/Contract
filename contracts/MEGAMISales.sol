@@ -209,10 +209,10 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         }
 
         // Increment used ML spots
-        userToUsedMLs[msg.sender] += 1;
+        unchecked { ++userToUsedMLs[msg.sender]; }
 
         // Increment total sold
-        totalSold += 1;
+        unchecked { ++totalSold; }
 
         megamiToken.mint(tokenId, msg.sender);
     }
@@ -243,7 +243,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         require(totalSold < (MAX_SUPPLY - RESERVED_TOKENS_FOR_TEAM), "sold out");
 
         // Increment total sold
-        totalSold += 1;
+        unchecked { ++totalSold; }
 
         megamiToken.mint(tokenId, msg.sender);
     }
@@ -260,7 +260,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         require(totalSold < (MAX_SUPPLY - RESERVED_TOKENS_FOR_TEAM), "sold out");
 
         // Increment total sold
-        totalSold += 1;
+        unchecked { ++totalSold; }
 
         megamiToken.mint(tokenId, msg.sender);
     }
@@ -275,7 +275,7 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         uint256 count = tokenIds.length;
         for (uint256 i = 0; i < count;) {
             // Increment total sold
-            totalSold += 1;
+            unchecked { ++totalSold; }
 
             megamiToken.mint(tokenIds[i], recipient);
             unchecked { ++i; }
