@@ -36,6 +36,12 @@ beforeEach(async function () {
         expect(await megami.connect(owner).mint(10, minter.address)).to.emit(megami, 'Transfer').withArgs(AddressZero, minter.address, 10);
     });
 
+    it("Should be able to mint 1 (lowest) and 10000 (highest)", async function () {
+      expect(await megami.connect(owner).mint(1, minter.address)).to.emit(megami, 'Transfer').withArgs(AddressZero, minter.address, 1);
+
+      expect(await megami.connect(owner).mint(10000, minter.address)).to.emit(megami, 'Transfer').withArgs(AddressZero, minter.address, 10000);
+  });
+
     it("Should not be able to mint the same token twice", async function () {
       expect(await megami.connect(owner).mint(10, minter.address)).to.emit(megami, 'Transfer').withArgs(AddressZero, minter.address, 10);
 
@@ -63,8 +69,12 @@ beforeEach(async function () {
       expect((await megami.totalSupply()).toString()).to.equal("0");
     });    
 
-    it("Should not be able to mint more than the limit", async function () {
-      await expect(megami.connect(owner).mint(10000, minter.address)).to.revertedWith("can't mint more than limit");
+    it("Should not be able to mint with token id 0", async function () {
+      await expect(megami.connect(owner).mint(0, minter.address)).to.revertedWith("invalid token id");
+    });
+    
+    it("Should not be able to mint greater than 10000", async function () {
+      await expect(megami.connect(owner).mint(10001, minter.address)).to.revertedWith("invalid token id");
     });
 
     // --- Royalty tests ---   

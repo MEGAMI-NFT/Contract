@@ -24,6 +24,11 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     }
 
     /**
+     * @dev Minimum token ID of MEGAMI.
+     */ 
+    uint256 private constant START_TOKEN_ID = 1;
+
+    /**
      * @notice Total supply of MEGAMI tokens.
      */
     uint256 public constant MAX_SUPPLY = 10000;
@@ -363,6 +368,8 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      * @param tokenId Token ID the price is being returned for.
      */
     function currentPrice(uint256 tokenId) public view returns (uint256) {
+        require(tokenId >= START_TOKEN_ID && tokenId < START_TOKEN_ID + MAX_SUPPLY, "invalid token id");
+
         uint256 currentTimestamp = block.timestamp;
         uint256 wave = getWave(tokenId);
         uint256 waveDAStartedTimestamp = auctionStartingTimestamp + (RELEASE_WAVE_TIME_INTERVAL * wave);
@@ -382,7 +389,8 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         uint256 startingPrice = AUCTION_STARTING_PRICE_GENERATED;
         uint256 priceDecrement = AUCTION_PRICE_DROP_UNIT_GENERATED;
 
-        uint256 sequenceIdInWave = tokenId % getSupplyPerWave();
+        // Since the range of tokenId is 1 to 10000, we need to convert it to 0 to 9999 for getting the expected sequence id
+        uint256 sequenceIdInWave = (tokenId - 1) % getSupplyPerWave();
         if(sequenceIdInWave < NUMBER_OF_ORIGINS_IN_WAVE + getNumberOfAlters(wave)) {
             if(sequenceIdInWave < NUMBER_OF_ORIGINS_IN_WAVE) {
                 // Origin
@@ -412,7 +420,8 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
      * @param tokenId Token ID the release wave is being returned for.
      */
     function getWave(uint256 tokenId) public pure returns (uint256) {
-        return tokenId / getSupplyPerWave();
+        // Since the range of tokenId is 1 to 10000, we need to convert it to 0 to 9999 for getting the expected wave number
+        return (tokenId - 1) / getSupplyPerWave();
     }
 
     /**

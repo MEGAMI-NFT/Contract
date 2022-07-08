@@ -30,11 +30,11 @@ async function mintUntilNonTeamLimit(auction, owner) {
     // Mint until 9550 (max of non team mint)
     const mintUnit = 100;
     for(i = 0; i < 9500; i += mintUnit ) {
-        const ids = [...Array(mintUnit).keys()].map(x => x + i);
+        const ids = [...Array(mintUnit).keys()].map(x => x + i + 1);
         await expect(auction.connect(owner).mintTeam(minter.address, ids)).to.be.not.reverted;
         expect(await auction.totalSold()).to.equal(i+mintUnit);
     }
-    const ids = [...Array(50).keys()].map(x => x + 9500);
+    const ids = [...Array(50).keys()].map(x => x + 9501);
     await expect(auction.connect(owner).mintTeam(owner.address, ids)).to.be.not.reverted;
     expect(await auction.totalSold()).to.equal(9550);
 }
@@ -65,16 +65,16 @@ describe("MEGAMISales", function () {
     it("can get corresponding wave based on tokenId", async function () {
         cases = [
             // tokenId, expected wave
-            [0, 0],
-            [1999, 0],
-            [2000, 1],
-            [3999, 1],
-            [4000, 2],
-            [5999, 2],
-            [6000, 3],
-            [7999, 3],
-            [8000, 4],
-            [9999, 4]
+            [1, 0],
+            [2000, 0],
+            [2001, 1],
+            [4000, 1],
+            [4001, 2],
+            [6000, 2],
+            [6001, 3],
+            [8000, 3],
+            [8001, 4],
+            [10000, 4]
         ]
 
         for(i = 0; i < cases.length; i++ ) {
@@ -89,40 +89,40 @@ describe("MEGAMISales", function () {
         cases = [
             // wave, tokenId, expected starting price
             // Wave 0
-            [0, 0,        "10"], // Origin start
-            [0, 5,        "10"], // Origin end
-            [0, 6,         "5"], // Alter start   
-            [0, 10,        "5"], // Alter end
-            [0, 11,      "0.2"], // Genearted start
-            [0, 1999,    "0.2"], // Generated end
+            [0, 1,        "10"], // Origin start
+            [0, 6,        "10"], // Origin end
+            [0, 7,         "5"], // Alter start   
+            [0, 11,        "5"], // Alter end
+            [0, 12,      "0.2"], // Genearted start
+            [0, 2000,    "0.2"], // Generated end
             // Wave 1
-            [1, 2000,    "10"], // Origin start
-            [1, 2005,    "10"], // Origin end
-            [1, 2006,     "5"], // Alter start
-            [1, 2010,     "5"], // Alter end
-            [1, 2011,   "0.2"], // Genearted start
-            [1, 3999,   "0.2"], // Generated end            
+            [1, 2001,    "10"], // Origin start
+            [1, 2006,    "10"], // Origin end
+            [1, 2007,     "5"], // Alter start
+            [1, 2011,     "5"], // Alter end
+            [1, 2012,   "0.2"], // Genearted start
+            [1, 4000,   "0.2"], // Generated end            
             // Wave 2
-            [2, 4000,    "10"], // Origin start
-            [2, 4005,    "10"], // Origin end
-            [2, 4006,     "5"], // Alter start
-            [2, 4010,     "5"], // Alter end
-            [2, 4011,   "0.2"], // Genearted start
-            [2, 5999,   "0.2"], // Generated end
+            [2, 4001,    "10"], // Origin start
+            [2, 4006,    "10"], // Origin end
+            [2, 4007,     "5"], // Alter start
+            [2, 4011,     "5"], // Alter end
+            [2, 4012,   "0.2"], // Genearted start
+            [2, 6000,   "0.2"], // Generated end
             // Wave 3
-            [3, 6000,    "10"], // Origin start
-            [3, 6005,    "10"], // Origin end
-            [3, 6006,     "5"], // Alter start
-            [3, 6010,     "5"], // Alter end
-            [3, 6011,   "0.2"], // Genearted start
-            [3, 7999,   "0.2"], // Generated end
+            [3, 6001,    "10"], // Origin start
+            [3, 6006,    "10"], // Origin end
+            [3, 6007,     "5"], // Alter start
+            [3, 6011,     "5"], // Alter end
+            [3, 6012,   "0.2"], // Genearted start
+            [3, 8000,   "0.2"], // Generated end
             // Wave 4
-            [4, 8000,    "10"], // Origin start
-            [4, 8005,    "10"], // Origin end
-            [4, 8006,     "5"], // Alter start
-            [4, 8009,     "5"], // Alter end
-            [4, 8010,   "0.2"], // Genearted start
-            [4, 9999,   "0.2"], // Generated end    
+            [4, 8001,    "10"], // Origin start
+            [4, 8006,    "10"], // Origin end
+            [4, 8007,     "5"], // Alter start
+            [4, 8010,     "5"], // Alter end
+            [4, 8011,   "0.2"], // Genearted start
+            [4, 10000,  "0.2"], // Generated end    
         ]
 
         for(i = 0; i < cases.length; i++ ) {
@@ -154,7 +154,7 @@ describe("MEGAMISales", function () {
             await auction.setAuctionStartTime(now - 1 - (60 * cases[i][0])); 
 
             // Start Price - 0.05 * i
-            expect((await auction.currentPrice(0))).to.equal(parseEther(cases[i][1])); 
+            expect((await auction.currentPrice(1))).to.equal(parseEther(cases[i][1])); 
         };
     });
 
@@ -178,7 +178,7 @@ describe("MEGAMISales", function () {
             await auction.setAuctionStartTime(now - 1 - (60 * cases[i][0])); 
 
             // Start Price - 0.05 * i
-            expect((await auction.currentPrice(6))).to.equal(parseEther(cases[i][1])); 
+            expect((await auction.currentPrice(7))).to.equal(parseEther(cases[i][1])); 
         };
     });
 
@@ -202,7 +202,7 @@ describe("MEGAMISales", function () {
             await auction.setAuctionStartTime(now - 1 - (60 * cases[i][0])); 
 
             // Start Price - 0.05 * i
-            expect((await auction.currentPrice(11))).to.equal(parseEther(cases[i][1])); 
+            expect((await auction.currentPrice(12))).to.equal(parseEther(cases[i][1])); 
         };
     });
 
@@ -262,31 +262,31 @@ describe("MEGAMISales", function () {
 
         cases = [
             // tokenId, past minutes, price returned
-            [0,          0, true], 
-            [2000,       0, false],
-            [4000,       0, false], 
-            [6000,       0, false], 
-            [8000,       0, false],
-            [0,          60, true], 
-            [2000,       60, true],
-            [4000,       60, false], 
-            [6000,       60, false], 
-            [8000,       60, false],
-            [0,          120, true], 
-            [2000,       120, true],
-            [4000,       120, true], 
-            [6000,       120, false], 
-            [8000,       120, false],
-            [0,          180, true], 
-            [2000,       180, true],
-            [4000,       180, true], 
-            [6000,       180, true], 
-            [8000,       180, false],    
-            [0,          240, true], 
-            [2000,       240, true],
-            [4000,       240, true], 
-            [6000,       240, true], 
-            [8000,       240, true],                         
+            [1,          0, true], 
+            [2001,       0, false],
+            [4001,       0, false], 
+            [6001,       0, false], 
+            [8001,       0, false],
+            [1,          60, true], 
+            [2001,       60, true],
+            [4001,       60, false], 
+            [6001,       60, false], 
+            [8001,       60, false],
+            [1,          120, true], 
+            [2001,       120, true],
+            [4001,       120, true], 
+            [6001,       120, false], 
+            [8001,       120, false],
+            [1,          180, true], 
+            [2001,       180, true],
+            [4001,       180, true], 
+            [6001,       180, true], 
+            [8001,       180, false],    
+            [1,          240, true], 
+            [2001,       240, true],
+            [4001,       240, true], 
+            [6001,       240, true], 
+            [8001,       240, true],                         
         ];
         for(i = 0; i < cases.length; i++ ) {
             // adjust the start time
@@ -298,6 +298,19 @@ describe("MEGAMISales", function () {
             }
         };
     });
+
+    it("price shouldn't be returned if token id is invalid", async function () {
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // 10 sec before DA starts
+        await auction.setAuctionStartTime(now - 240); // after wave 4 release
+
+        // Token id should start from 1
+        await expect(auction.currentPrice(0)).to.be.revertedWith("invalid token id");
+
+        // token id should end at 10000
+        await expect(auction.currentPrice(10001)).to.be.revertedWith("invalid token id");
+    });  
 
     // --- mintDA ---
     it("auction is deactivated by default", async function () {
@@ -514,17 +527,34 @@ describe("MEGAMISales", function () {
         await expect(auction.connect(minter).mintDA(signature, 1, 9550, {value: parseEther('0.2')})).to.be.revertedWith("sold out");
     });
 
+    it("DA mint should fail if provided token id is invalid", async function () {     
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 1 sec 
+        await auction.setAuctionStartTime(now - 1);
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        const signature = await generateSignature(minter.address, 1);
+        await expect(auction.connect(minter).mintDA(signature, 1, 0, {value: parseEther('0.2')})).to.be.revertedWith("invalid token id");
+        await expect(auction.connect(minter).mintDA(signature, 1, 10001, {value: parseEther('0.2')})).to.be.revertedWith("invalid token id");
+    });    
+
     // --- teamMint ---
     it("should be able to mint multiple tokens though mintTeam", async function () {   
         expect(await auction.totalSold()).to.equal(0);  
         
-        // Mint token ID 10, 11, and 15
-        const tx = auction.connect(owner).mintTeam(minter.address, [10, 11, 15]);
+        // Mint token ID 1, 10, 11, 15, and 10000
+        const tx = auction.connect(owner).mintTeam(minter.address, [1, 10, 11, 15, 10000]);
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 10);
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 11);
         await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 15);
 
-        expect(await auction.totalSold()).to.equal(3);
+        expect(await auction.totalSold()).to.equal(5);
     });    
 
     it("should be able to mint until max supply even after sold out", async function () {
@@ -532,7 +562,7 @@ describe("MEGAMISales", function () {
 
         const mintUnit = 50;
         for(i = 9550; i < 10000; i += mintUnit) {
-            const ids = [...Array(mintUnit).keys()].map(x => x + i);
+            const ids = [...Array(mintUnit).keys()].map(x => x + i + 1);
             await expect(auction.connect(owner).mintTeam(minter.address, ids)).to.be.not.reverted;
             expect(await auction.totalSold()).to.equal(i+mintUnit);
         }
@@ -546,6 +576,11 @@ describe("MEGAMISales", function () {
 
     it("non owner should not be able to mint through mintTeam", async function () {     
         await expect(auction.connect(minter).mintTeam(minter.address, [10, 11, 15])).to.be.revertedWith("Ownable: caller is not the owner");
+    }); 
+
+    it("teamMint should fail if the provided token id is invalid", async function () {     
+        await expect(auction.connect(owner).mintTeam(minter.address, [0])).to.be.revertedWith("invalid token id");
+        await expect(auction.connect(owner).mintTeam(minter.address, [10001])).to.be.revertedWith("invalid token id");
     }); 
 
     // --- privateMint ---
@@ -641,6 +676,23 @@ describe("MEGAMISales", function () {
 
         expect(await auction.totalSold()).to.equal(2);
     }); 
+
+    it("private mint should fail if the provided token id is invalid", async function () {
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // Make the private sale active 
+        await auction.setPrivateSaleActive(true);
+
+        // Generate a signature for a waitlist minter
+        const signature = await generateSignature(minter.address, 0);
+        
+        // Mint token ID 0
+        await expect(auction.connect(minter).mintPrivate(signature, 0, 0, {value: parseEther('0.08')})).to.be.revertedWith("invalid token id");
+
+        // Mint token ID 10001
+        await expect(auction.connect(minter).mintPrivate(signature, 0, 10001, {value: parseEther('0.08')})).to.be.revertedWith("invalid token id");
+    });
     
     // --- publicMint ---
     it("public mint shouldn't be possible until it becomes active", async function () {     
