@@ -18,6 +18,11 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     using Strings for uint256;
 
     /**
+     * @dev Minimum token ID of MEGAMI.
+     */ 
+    uint256 private constant START_TOKEN_ID = 1;
+
+    /**
      * @dev Maxium number of MEGAMI tokens can be minted.
      */ 
     uint256 private constant MAX_SUPPLY = 10000;
@@ -116,7 +121,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         override 
         onlyOwnerORSalesContract nonReentrant 
     { 
-        require(_tokenId < MAX_SUPPLY, "can't mint more than limit");
+        require(_tokenId >= START_TOKEN_ID && _tokenId < START_TOKEN_ID + MAX_SUPPLY, "invalid token id");
         
         unchecked { ++totalSupply; }
 
