@@ -261,6 +261,14 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     }
 
     /**
+     * @dev Returns the used ML spots of the user
+     * @param user The address of a user being checked
+     */
+    function getUsedMLs(address user) external view returns(uint256) {
+        return userToUsedMLs[user];
+    }
+
+    /**
      * @dev Set the price of the private/public sale.
      * @param newPrice The new price of the private/public sale.
      */
