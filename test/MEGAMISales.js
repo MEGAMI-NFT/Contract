@@ -528,6 +528,28 @@ describe("MEGAMISales", function () {
         await expect(auction.connect(minter).mintDA(signature, 1, 10001, {value: parseEther('0.2')})).to.be.revertedWith("invalid token id");
     });    
 
+    it("getUsedMLs should return the used mintlist spots", async function () {
+        expect(await auction.getUsedMLs(minter.address)).to.equal(0);
+
+        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
+
+        // Set signer 
+        await auction.setSigner(SIGNER_ADDRESS);
+
+        // DA started 1 sec 
+        await auction.setAuctionStartTime(now - 1);
+
+        // Set DA active
+        await auction.setDutchActionActive(true);
+        
+        // Mint token ID 100 with 1 mintlist spot
+        const signature = await generateSignature(minter.address, 1);
+        const tx = auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.2')});
+        await expect(tx).to.emit(megamiContract, 'Transfer').withArgs(AddressZero, minter.address, 100);
+
+        expect(await auction.getUsedMLs(minter.address)).to.equal(1);
+    });
+
     // --- teamMint ---
     it("should be able to mint multiple tokens though mintTeam", async function () {   
         expect(await auction.totalSold()).to.equal(0);  
