@@ -8,7 +8,8 @@
     "test": "hardhat test",
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:coverage": "hardhat coverage",
-    "deploy:rinkeby": "hardhat clean && hardhat run --network rinkeby scripts/deploy.js"
+    "deploy:rinkeby": "hardhat clean && hardhat run --network rinkeby scripts/deploy.js",
+    "deploy:mainnet": "hardhat clean && hardhat run --network mainnet scripts/deploy.js"
   },
   "repository": {
     "type": "git",
