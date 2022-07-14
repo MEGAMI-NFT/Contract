@@ -475,22 +475,6 @@ describe("MEGAMISales", function () {
         const signature = await generateSignature(minter.address, 1);
         await expect(auction.connect(minter).mintDA(signature, 1, 100, {value: parseEther('0.2')})).to.be.revertedWith("DA is finished");
     });        
-
-    it("DA mint should fail if speficied tokenId is invalid", async function () {     
-        now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
-
-        // Set signer 
-        await auction.setSigner(SIGNER_ADDRESS);
-
-        // DA started 1 sec 
-        await auction.setAuctionStartTime(now - 1);
-
-        // Set DA active
-        await auction.setDutchActionActive(true);
-        
-        const signature = await generateSignature(minter.address, 1);
-        await expect(auction.connect(minter).mintDA(signature, 1, 10000, {value: parseEther('0.2')})).to.be.revertedWith("invalid token id");
-    });    
     
     it("DA mint should fail if provided eth is insufficient", async function () {     
         now = (await provider.getBlock(await provider.getBlockNumber())).timestamp;
