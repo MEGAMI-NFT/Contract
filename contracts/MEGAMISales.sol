@@ -236,9 +236,6 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
             "All ML spots have been consumed"
         );
 
-        // Validate token ID
-        require(tokenId < MAX_SUPPLY, "invalid token id");
-
         // Check total sold
         require(totalSold < (MAX_SUPPLY - RESERVED_TOKENS_FOR_TEAM), "sold out");
 
