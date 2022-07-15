@@ -145,6 +145,13 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     }
 
     /**
+     * @dev Returns the address of the sales contract.
+     */
+    function getSalesContract() external view returns (address) {
+        return salesContractAddr;
+    }
+
+    /**
      * @dev Set baseTokenURI.
      * @param newBaseTokenURI The value being set to baseTokenURI.
      */
@@ -216,6 +223,13 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
         require(contractAddr != address(0), "invalid address");
         fundManager = contractAddr;
     } 
+
+    /**
+     * @dev Return the address of the fund manager contarct.
+     */
+    function getFundManagerContract() external view returns (address) {
+        return fundManager;
+    }
 
     /**
      * @dev Allow owner to send funds directly to recipient. This is for emergency purpose and use moveFundToManager for regular withdraw.

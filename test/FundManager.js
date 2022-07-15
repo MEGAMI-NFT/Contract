@@ -61,6 +61,21 @@ beforeEach(async function () {
       });
 
     // --- test withdraw ---
+    it("Should be able to retrieve current feeReceivers", async function() {
+      // Set feeReceivers
+      await (expect(fundManager.setFeeReceivers([
+        [r1.address, 6000], 
+        [r2.address, 4000], 
+      ]))).to.be.not.reverted;
+
+      const receivers = await fundManager.getFeeReceivers();
+
+      expect(receivers[0].receiver).to.equal(r1.address);
+      expect(receivers[0].sharePercentageBasisPoints).to.equal(6000);
+      expect(receivers[1].receiver).to.equal(r2.address);
+      expect(receivers[1].sharePercentageBasisPoints).to.equal(4000);
+    })
+    
     it("Should distribute fee to feeReceivers", async function() {
       // Give 100 ETH to the contract
       await r1.sendTransaction({to: fundManager.address, value: parseEther("100")});
