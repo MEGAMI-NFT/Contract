@@ -95,6 +95,13 @@ contract FundManager is Ownable {
     }
 
     /**
+     * @dev Return the list of fee receivers
+     */
+    function getFeeReceivers() external view returns (FundReceiver[] memory) {
+        return _fundReceivers;
+    }
+
+    /**
      * @dev Send funds to registered receivers based on their share.
      *      If there is remainders, they are sent to the receiver registered at first (index 0).
      */

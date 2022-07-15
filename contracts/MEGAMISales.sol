@@ -390,6 +390,13 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
     } 
 
     /**
+     * @dev Return the address of the fund manager contarct.
+     */
+    function getFundManagerContract() external view returns (address) {
+        return fundManager;
+    }
+
+    /**
      * @dev Allow owner to send funds directly to recipient. This is for emergency purpose and use moveFundToManager for regular withdraw.
      * @param recipient The address of the recipinet.
      */

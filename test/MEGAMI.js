@@ -54,6 +54,9 @@ beforeEach(async function () {
       // set a new seller
       expect(await megami.setSalesContract(seller.address));
 
+      // confirm
+      expect(await megami.getSalesContract()).to.equal(seller.address);
+
       // mint by seller
       expect(await megami.connect(seller).mint(10, other.address));
       
@@ -181,14 +184,20 @@ beforeEach(async function () {
     // --- test withdraw ---
     it("Should fail to set invalid address to FundManager", async function() {
       await expect(megami.setFundManagerContract(AddressZero)).to.be.revertedWith("invalid address");
+
+      expect(await megami.getFundManagerContract()).to.equal(fundManagerContract.address);
     })
 
     it("Should fail to update FundManager if transaction is initiated by non owner", async function() {
       await expect(megami.connect(other).setFundManagerContract(other.address)).to.be.revertedWith("Ownable: caller is not the owner");
+
+      expect(await megami.getFundManagerContract()).to.equal(fundManagerContract.address);
     })
     
     it("Should be able to update FundManager", async function() {
       await expect(megami.setFundManagerContract(other.address)).to.be.not.reverted;
+
+      expect(await megami.getFundManagerContract()).to.equal(other.address);
     })
   
     it("Should move fund to FundManager", async function() {
