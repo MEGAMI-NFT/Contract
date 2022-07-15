@@ -44,6 +44,7 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -407,6 +408,16 @@ contract MEGAMISales is ReentrancyGuard, Ownable {
         
         (bool sent, ) = fundManager.call{value: address(this).balance}("");
         require(sent, "failed to move fund to FundManager contract");
+    }
+
+    /**
+     * @dev ERC20s should not be sent to this contract, but if someone does, it's nice to be able to recover them.
+     *      Copied from ForgottenRunesWarriorsGuild. Thank you dotta ;)
+     * @param token IERC20 the token address
+     * @param amount uint256 the amount to send
+     */
+    function forwardERC20s(IERC20 token, uint256 amount) public onlyOwner {
+        token.transfer(msg.sender, amount);
     }
 
     /**
