@@ -154,7 +154,7 @@ beforeEach(async function () {
       // mint by owner
       expect(await megami.connect(owner).mint(10, other.address));
 
-      expect((await megami.tokenURI(10))).to.equal("ipfs://xxxxx/10.json");
+      expect((await megami.tokenURI(10))).to.equal("ipfs://QmQMdt64iGaCFR1RCN9yRL2eFbWeizPwEdVKbfH9aSayFt/10.json");
     });
 
     it("token URI must be return error for unminted token Id", async function() {
