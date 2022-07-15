@@ -76,7 +76,7 @@ contract MEGAMI is IMEGAMI, ERC721, Ownable, ReentrancyGuard, RoyaltiesV2 {
     /**
      * @dev The base URI of metadata 
      */ 
-    string private baseTokenURI = "ipfs://xxxxx/";
+    string private baseTokenURI = "ipfs://QmQMdt64iGaCFR1RCN9yRL2eFbWeizPwEdVKbfH9aSayFt/";
 
     /**
      * @dev Address of the royalty recipient 
