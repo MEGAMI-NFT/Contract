@@ -18,7 +18,7 @@ async function generateSignature(address, num_of_ml) {
     if (hex.length < 2) {
         hex = "0" + hex;
     }
-    let message = `0x0000000000000000000000${address.substring(2)}${hex}`;
+    let message = `0x0000000000000000000000${Web3.utils.toChecksumAddress(address).substring(2)}${hex}`;
 
     // Sign the message, update the `signedMessages` dict
     // storing only the `signature` value returned from .sign()
