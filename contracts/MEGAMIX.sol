@@ -53,6 +53,17 @@ import "./rarible/royalties/contracts/LibRoyaltiesV2.sol";
 import "./rarible/royalties/contracts/RoyaltiesV2.sol";
 
 contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
+
+    /**
+     * @dev The name of the token
+     */
+    string private _name = "MEGAMIX";
+    
+    /**
+     * @dev The symbol of the token
+     */
+    string private _symbol = "MEGAMIX";
+
     /**
      * @dev The map managing the total supply for each token
      */
@@ -517,4 +528,29 @@ contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
         }
         return super.supportsInterface(interfaceId);
     }
+
+  /**
+   * @dev Return the name of the token
+   */
+  function name() public view returns (string memory) {
+    return _name;
+  }
+
+  /**
+   * @dev Return the symbol of the token
+   */
+  function symbol() public view returns (string memory) {
+    return _symbol;
+  }
+
+  /**
+   * @dev Update the name and symbol of the token
+   */
+  function setNameAndSymbol(string calldata _newName, string calldata _newSymbol)
+    external 
+    onlyOwner 
+  {
+    _name = _newName;
+    _symbol = _newSymbol;
+  }
 }

@@ -171,13 +171,6 @@ describe.only("MEGAMIX", function () {
         await expect(megamix.airdrop(10, 1, [])).to.be.revertedWith("no recipients");
     })        
 
-    it("Should fail to send a token to multiple recipients if recipients contains invalid address", async function() {
-        // create tokens first
-        await expect(megamix.create(10, "ipfs://xxxxx/1.json", true)).not.to.be.reverted;
-                
-        await expect(megamix.airdrop(10, 1, [seller.address, AddressZero, other.address])).to.be.revertedWith("receiver address can't be null");
-    })     
-
     it("Should fail to send a token to multiple recipients if non owner tries it", async function() {
         // create tokens first
         await expect(megamix.create(10, "ipfs://xxxxx/1.json", true)).not.to.be.reverted;
@@ -594,5 +587,29 @@ describe.only("MEGAMIX", function () {
   
       // contract's wallet balance shouldn't be changed
       expect((await provider.getBalance(megamix.address)).toString()).to.equal(parseEther("100"));
-    })    
+    })
+
+    // --- test name and symbol ---
+    it("should be able to get the default name and symbol", async function() {
+        expect(await megamix.name()).to.equal("MEGAMIX");
+        expect(await megamix.symbol()).to.equal("MEGAMIX");
+    });
+
+    it("should be able to change the name and symbol", async function() {
+        // Change the name and symbol
+        await expect(megamix.setNameAndSymbol("MEGAMEGAMIX", "Sugoi MEGAMIX")).to.be.not.reverted;
+
+        // Confirm the change
+        expect(await megamix.name()).to.equal("MEGAMEGAMIX");
+        expect(await megamix.symbol()).to.equal("Sugoi MEGAMIX");
+    })
+
+    it("should fail to change the name and symbol if transaction is initiated by non-owner", async function() {
+        // Change the name and symbol
+        await expect(megamix.connect(other).setNameAndSymbol("MEGAMEGAMIX", "Sugoi MEGAMIX")).to.be.reverted;
+
+        // Confirm the change
+        expect(await megamix.name()).to.equal("MEGAMIX");
+        expect(await megamix.symbol()).to.equal("MEGAMIX");
+    })
 });
