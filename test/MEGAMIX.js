@@ -1,11 +1,11 @@
 const { AddressZero } = require('@ethersproject/constants');
 const { expect, assert } = require("chai");
 const { parseEther } = require('ethers/lib/utils');
-const { waffle } = require("hardhat");
+const { waffle, ethers } = require("hardhat");
 
 const provider = waffle.provider;
 
-describe("MEGAMIX", function () {
+describe.only("MEGAMIX", function () {
     beforeEach(async function () {  
         [owner, seller, minter, other] = await ethers.getSigners();
 
@@ -20,6 +20,11 @@ describe("MEGAMIX", function () {
         // for it to be deployed(), which happens once its transaction has been
         // mined.
         await megamix.deployed();
+
+        // For controller testings
+
+        const MegamixController = await ethers.getContractFactory("MEGAMIXController");
+        megamixControllerContract = await MegamixController.deploy(megamix.address);
     });
 
     // --- set tokenURI tests ---
@@ -81,13 +86,26 @@ describe("MEGAMIX", function () {
         await expect(tx).not.to.be.reverted;
         await expect(tx).to.emit(megamix, 'TransferSingle').withArgs(owner.address, AddressZero, minter.address, 10, 1);
     });
+
+    it("Should be able to mint a token from the controller", async function() {
+        // create a token first
+        await expect(megamix.create(10, "ipfs://xxxxx/1.json", true)).not.to.be.reverted;
+
+        // set the controller
+        await expect(megamix.setControllerContract(megamixControllerContract.address)).to.be.not.reverted;
+
+        // mint the token from the controller
+        tx = megamixControllerContract.mint(minter.address, 10, 1, "0x");
+        await expect(tx).not.to.be.reverted;
+        await expect(tx).to.emit(megamix, 'TransferSingle').withArgs(megamixControllerContract.address, AddressZero, minter.address, 10, 1);
+    });    
     
     it("Should fail to mint a token if non owner tries", async function() {
         // create a token first
         await expect(megamix.create(10, "ipfs://xxxxx/1.json", true)).not.to.be.reverted;
 
         // mint the token
-        await expect(megamix.connect(other).mint(minter.address, 10, 1, "0x")).to.be.revertedWith("Ownable: caller is not the owner");
+        await expect(megamix.connect(other).mint(minter.address, 10, 1, "0x")).to.be.revertedWith("Ownable: caller is not the Owner or ControllerContract");
     });
 
     // --- mint batch tests ---
@@ -102,12 +120,25 @@ describe("MEGAMIX", function () {
         await expect(tx).to.emit(megamix, 'TransferBatch').withArgs(owner.address, AddressZero, minter.address, [10, 20], [1, 2]);
     });
 
+    it("Should be able to mint multipe tokens at once from the controller", async function() {
+        // create a token first
+        await expect(megamix.create(10, "ipfs://xxxxx/1.json", true)).not.to.be.reverted;
+
+        // set the controller
+        await expect(megamix.setControllerContract(megamixControllerContract.address)).to.be.not.reverted;
+
+        // mint the token from the controller
+        tx = megamixControllerContract.mintBatch(minter.address, [10, 20], [1, 2], "0x");
+        await expect(tx).not.to.be.reverted;
+        await expect(tx).to.emit(megamix, 'TransferBatch').withArgs(megamixControllerContract.address, AddressZero, minter.address, [10, 20], [1, 2]);
+    });    
+
     it("Should fail to mint multiple tokens if non owner tries", async function() {
         // create tokens first
         await expect(megamix.create(10, "ipfs://xxxxx/1.json", true)).not.to.be.reverted;
         await expect(megamix.create(20, "ipfs://xxxxx/2.json", true)).not.to.be.reverted;
 
-        await expect(megamix.connect(other).mintBatch(minter.address, [10, 20], [1, 2], "0x")).to.be.revertedWith("Ownable: caller is not the owner");
+        await expect(megamix.connect(other).mintBatch(minter.address, [10, 20], [1, 2], "0x")).to.be.revertedWith("Ownable: caller is not the Owner or ControllerContract");
     });
 
     // --- airdrop tests ---
@@ -170,6 +201,24 @@ describe("MEGAMIX", function () {
         await expect(tx2).to.emit(megamix, 'TransferSingle').withArgs(owner.address, minter.address, AddressZero, 10, 1);
     });
 
+    it("Should be able to burn a token from the controller", async function() {
+        // create a token first
+        await expect(megamix.create(10, "ipfs://xxxxx/1.json", true)).not.to.be.reverted;
+
+        // mint the token
+        tx = megamix.mint(minter.address, 10, 1, "0x");
+        await expect(tx).not.to.be.reverted;
+        await expect(tx).to.emit(megamix, 'TransferSingle').withArgs(owner.address, AddressZero, minter.address, 10, 1);
+        
+        // set the controller
+        await expect(megamix.setControllerContract(megamixControllerContract.address)).to.be.not.reverted;
+
+        // burn the token from the controller
+        tx2 = megamixControllerContract.burn(minter.address, 10, 1);
+        await expect(tx2).not.to.be.reverted;
+        await expect(tx2).to.emit(megamix, 'TransferSingle').withArgs(megamixControllerContract.address, minter.address, AddressZero, 10, 1);
+    });        
+
     it("Should fail to burn a token if non owner tries", async function() {
         // create tokens first
         await expect(megamix.create(10, "ipfs://xxxxx/1.json", true)).not.to.be.reverted;
@@ -180,7 +229,7 @@ describe("MEGAMIX", function () {
         await expect(tx).to.emit(megamix, 'TransferSingle').withArgs(owner.address, AddressZero, minter.address, 10, 1);
 
         // burn the token
-        await expect(megamix.connect(other).burn(minter.address, 10, 1)).to.be.revertedWith("Ownable: caller is not the owner");
+        await expect(megamix.connect(other).burn(minter.address, 10, 1)).to.be.revertedWith("Ownable: caller is not the Owner or ControllerContract");
     });
 
     it("Should fail to burn a token more than the total supply", async function() {
@@ -213,6 +262,24 @@ describe("MEGAMIX", function () {
         await expect(tx2).to.emit(megamix, 'TransferBatch').withArgs(owner.address, minter.address, AddressZero, [10, 20], [1, 2]);
     });    
 
+    it("Should be able to burn multiple tokens at once from the controller", async function() {
+        // create a token first
+        await expect(megamix.create(10, "ipfs://xxxxx/1.json", true)).not.to.be.reverted;
+
+        // mint the tokens
+        tx = megamix.mintBatch(minter.address, [10, 20], [1, 2], "0x");
+        await expect(tx).not.to.be.reverted;
+        await expect(tx).to.emit(megamix, 'TransferBatch').withArgs(owner.address, AddressZero, minter.address, [10, 20], [1, 2]);
+        
+        // set the controller
+        await expect(megamix.setControllerContract(megamixControllerContract.address)).to.be.not.reverted;
+
+        // burn the tokens from the controller
+        tx2 = megamixControllerContract.burnBatch(minter.address, [10, 20], [1, 2]);
+        await expect(tx2).not.to.be.reverted;
+        await expect(tx2).to.emit(megamix, 'TransferBatch').withArgs(megamixControllerContract.address, minter.address, AddressZero, [10, 20], [1, 2]);
+    });      
+
     it("Should fail to burn multiple tokens if non owner tries", async function() {
         // create tokens first
         await expect(megamix.create(10, "ipfs://xxxxx/1.json", true)).not.to.be.reverted;
@@ -224,7 +291,7 @@ describe("MEGAMIX", function () {
         await expect(tx).to.emit(megamix, 'TransferBatch').withArgs(owner.address, AddressZero, minter.address, [10, 20], [1, 2]);
 
         // burn the tokens
-        await expect(megamix.connect(other).burnBatch(minter.address, [10, 20], [1, 2])).to.be.revertedWith("Ownable: caller is not the owner");
+        await expect(megamix.connect(other).burnBatch(minter.address, [10, 20], [1, 2])).to.be.revertedWith("Ownable: caller is not the Owner or ControllerContract");
     });        
 
     // --- safeTransferFrom tests ---
@@ -299,7 +366,16 @@ describe("MEGAMIX", function () {
 
         // transfer to another wallet
         await expect(megamix.connect(minter).safeBatchTransferFrom(minter.address, other.address, [10, 20], [1, 2], "0x")).to.be.revertedWith("transfer is disabled");
-    });    
+    });   
+    
+    // --- controllerContract tests  ---
+    it("Should be able to change the controller contract", async function() {
+        expect(await megamix.getControllerContract()).to.equal(AddressZero);
+
+        await expect(megamix.setControllerContract(megamixControllerContract.address)).to.be.not.reverted;
+
+        expect(await megamix.getControllerContract()).to.equal(megamixControllerContract.address);
+    });
 
     // --- transferability tests ---
     it("Should return the current status of the transferability", async function() {

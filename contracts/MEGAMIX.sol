@@ -102,6 +102,11 @@ contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
     address private fundManager;
 
     /**
+     * @dev Address of controller contract
+     */ 
+    address private controllerContractAddr;
+
+    /**
      * @dev Constractor of MEGAMI contract. Setting the fund manager and royalty recipient.
      * @param fundManagerContractAddress Address of the contract managing funds.
      */
@@ -117,6 +122,33 @@ contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
      * @dev For receiving fund in case someone try to send it.
      */
     receive() external payable {}
+
+    /**
+     * @dev The modifier allowing the function access only for owner and controller contract.
+     */
+    modifier onlyOwnerORControllerContract()
+    {
+        require(controllerContractAddr == _msgSender() || owner() == _msgSender(), "Ownable: caller is not the Owner or ControllerContract");
+        _;
+    }
+
+    /**
+     * @dev Sets the address of the controller contract.
+     * @param newControllerContractAddr Address of the contract controlling MEGAMIX tokens.
+     */
+    function setControllerContract(address newControllerContractAddr)
+        external
+        onlyOwner
+    {
+        controllerContractAddr = newControllerContractAddr;
+    }
+
+    /**
+     * @dev Returns the address of the controller contract.
+     */
+    function getControllerContract() external view returns (address) {
+        return controllerContractAddr;
+    }    
 
     /**
      * @dev Set the address of the fund manager contract.
@@ -193,7 +225,7 @@ contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
     {
         // Check if the token can be transfered
         require(exists(tokenId), "the token doesn't exist");   
-        require(owner() == _msgSender() || _transferable[tokenId], "transfer is disabled");
+        require(_transferable[tokenId] || owner() == _msgSender() || controllerContractAddr == _msgSender(), "transfer is disabled");
 
         super.safeTransferFrom(from, to, tokenId, amount, data);
 	}
@@ -210,7 +242,7 @@ contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
         uint256 count = tokenIds.length;
         for (uint256 i = 0; i < count;) {
             require(exists(tokenIds[i]), "the token doesn't exist");   
-            require(owner() == _msgSender() || _transferable[tokenIds[i]], "transfer is disabled");
+            require(_transferable[tokenIds[i]] || owner() == _msgSender() || controllerContractAddr == _msgSender(), "transfer is disabled");
             unchecked { ++i; }
         }
 
@@ -288,7 +320,7 @@ contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
      */
     function mint(address to, uint256 tokenId, uint256 amount, bytes memory data)
         public
-        onlyOwner
+        onlyOwnerORControllerContract
     {
         _mint(to, tokenId, amount, data);
     }
@@ -301,7 +333,7 @@ contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
      */
     function mintBatch(address to, uint256[] memory tokenIds, uint256[] memory amounts, bytes memory data)
         public
-        onlyOwner
+        onlyOwnerORControllerContract
     {
         _mintBatch(to, tokenIds, amounts, data);
     }
@@ -338,7 +370,7 @@ contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
      */
 	function burn(address holder, uint256 tokenId, uint256 amount) 
         public 
-        onlyOwner 
+        onlyOwnerORControllerContract 
     {
 		_burn(holder, tokenId, amount);
 	}
@@ -351,7 +383,7 @@ contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
      */
 	function burnBatch(address holder, uint256[] memory tokenIds, uint256[] memory amounts) 
         public 
-        onlyOwner 
+        onlyOwnerORControllerContract 
     {
 		_burnBatch(holder, tokenIds, amounts);
     }
@@ -459,7 +491,6 @@ contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
 
     /**
      * @dev ERC20s should not be sent to this contract, but if someone does, it's nice to be able to recover them.
-     *      Copied from ForgottenRunesWarriorsGuild. Thank you dotta ;)
      * @param token IERC20 the token address
      * @param amount uint256 the amount to send
      */
