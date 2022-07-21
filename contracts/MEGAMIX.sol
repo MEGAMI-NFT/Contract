@@ -354,8 +354,6 @@ contract MEGAMIX is ERC1155URIStorage, Ownable, RoyaltiesV2 {
         require(amount > 0, "amount should be more than 0");
 
         for(uint256 i = 0; i < recipientsLength;) {
-            require(recipients[i] != address(0), "receiver address can't be null");
-            
             mint(recipients[i], tokenId, amount, "");
 
             unchecked { ++i; }
