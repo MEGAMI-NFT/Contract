@@ -13,7 +13,14 @@ const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || "";
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.8.7",
+  solidity: {
+    version: "0.8.7",
+    settings: {
+      optimizer: {
+        enabled: true
+      },
+    },
+  },
   mocha: {
     timeout: 120000000 // 2 minuts
   },
