@@ -125,9 +125,10 @@ contract MegamiRaffle is Ownable, VRFConsumerBaseV2 {
      * @param raffleId The id of the raffle
      * @param dataUri The URL of the raffle data fed into the raffle script
      */
-    function setRandomSeed(uint256 raffleId, string calldata dataUri) external onlyOwner {        
+    function setRandomSeed(uint256 raffleId, string calldata dataUri) external onlyOwner {   
+        require(raffleId != 0, "raffleId must be non zero");
         require(bytes(raffleScriptURI).length != 0, "raffle script is empty");
-        require(randomSeeds[raffleId] == 0, "seed is already set");
+        require(bytes(raffleDataURIs[raffleId]).length == 0, "seed is already requested");
 
         // Save the specified raffle ID
         raffleIdForRetrievingRandomSeed = raffleId;

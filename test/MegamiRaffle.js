@@ -71,6 +71,10 @@ describe.only("MegamiRaffle", function () {
         await expect(megamiRaffle.connect(other).setRandomSeed(1, "ipfs://xxxxx/")).to.be.revertedWith("Ownable: caller is not the owner");
     });
 
+    it("Should fail to set the random seed if raffleId is zero", async function () {
+        await expect(megamiRaffle.setRandomSeed(0, "ipfs://xxxxx/")).to.be.revertedWith("raffleId must be non zero");
+    });    
+
     it("Should fail to set the random seed if raffle script URI is empty", async function () {
         await expect(megamiRaffle.setRandomSeed(1, "ipfs://xxxxx/")).to.be.revertedWith("raffle script is empty");
     });
@@ -101,6 +105,6 @@ describe.only("MegamiRaffle", function () {
         await expect(megamiRaffle.setRandomSeed(1, "ipfs://xxxxx/")).not.to.be.reverted;
         
         // Try to set the random seed again
-        await expect(megamiRaffle.setRandomSeed(1, "ipfs://yyyyy/")).to.be.revertedWith("seed is already set");
+        await expect(megamiRaffle.setRandomSeed(1, "ipfs://yyyyy/")).to.be.revertedWith("seed is already requested");
     });
 });
