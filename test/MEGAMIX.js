@@ -5,7 +5,7 @@ const { waffle, ethers } = require("hardhat");
 
 const provider = waffle.provider;
 
-describe.only("MEGAMIX", function () {
+describe("MEGAMIX", function () {
     beforeEach(async function () {  
         [owner, seller, minter, other] = await ethers.getSigners();
 

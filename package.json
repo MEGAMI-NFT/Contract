@@ -9,8 +9,7 @@
     "test": "hardhat test",
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:coverage": "hardhat coverage",
-    "deploy:rinkeby": "hardhat clean && hardhat run --network rinkeby scripts/MEGAMIX-deploy.js",
-    "deploy:mainnet": "hardhat clean && hardhat run --network mainnet scripts/MEGAMIX-deploy.js"
+    "deploy:rinkeby": "hardhat clean && hardhat run --network rinkeby scripts/MegamiRaffle-deploy.js"
   },
   "repository": {
     "type": "git",
@@ -33,6 +32,7 @@
     "web3": "^1.7.3"
   },
   "dependencies": {
+    "@chainlink/contracts": "^0.4.2",
     "@ethersproject/providers": "^5.6.8",
     "@nomiclabs/hardhat-etherscan": "^3.1.0",
     "solhint": "^3.3.7"
