@@ -45,8 +45,10 @@ pragma solidity ^0.8.7;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 contract MEGAMIMovieSBT is ERC721, Ownable {
+    using ECDSA for bytes32;
   
     /**
      * @dev Price of the MEGAMIMovieSBT token
@@ -59,12 +61,12 @@ contract MEGAMIMovieSBT is ERC721, Ownable {
     uint256 public nextTokenId = 0;
 
     /**
-     * @notice Total number of the available MEGAMIMoviewSBT tokens.
+     * @dev Total number of the available MEGAMIMoviewSBT tokens.
      */ 
     uint256 public totalSupply = 0;
 
     /**
-     * @dev Map to manage consumed ML spots per minter.
+     * @dev Map to manage the tokenUri for each token id.
      */
     mapping(uint256 => string) private tokenURIs;    
 
@@ -81,14 +83,27 @@ contract MEGAMIMovieSBT is ERC721, Ownable {
     address private fundManager;
 
     /**
+     * @dev Address creating a signature used by mint
+     */
+    address public uriSigner;
+
+    /**
      * @dev Mint MEGAMIMovieSBT token
      * @param _tokenURI The token URI used by the minted token
      */
-    function mint(string calldata _tokenURI) external payable {
+    function mint(string calldata _tokenURI, bytes calldata signature) external payable {
         // Check if correct amount of eth is sent
         require(msg.value == tokenPrice, "Invalid amount of eth.");
 
-        // TODO: verify tokenURL using a signature
+        // verify tokenURL using a signature
+        require(
+            uriSigner ==
+                keccak256(
+                    abi.encodePacked(
+                        "\x19Ethereum Signed Message:\n32",
+                        keccak256(bytes(_tokenURI))
+                    )
+                ).recover(signature), "invalid signer");
 
         unchecked { ++totalSupply; }
 
@@ -97,6 +112,19 @@ contract MEGAMIMovieSBT is ERC721, Ownable {
 
         unchecked { ++nextTokenId; }
     }
+
+    /**
+     * @dev Mint MEGAMIMovieSBT token
+     * @param _tokenURI The token URI used by the minted token
+     */
+    function teamMint(string calldata _tokenURI, address _to) external onlyOwner {
+        unchecked { ++totalSupply; }
+
+        tokenURIs[nextTokenId] = _tokenURI;
+        _mint(_to, nextTokenId);
+
+        unchecked { ++nextTokenId; }
+    }    
 
     /**
      * @dev Burn MEGAMIMovieSBT token. Only owner of the token can burn.
@@ -116,7 +144,15 @@ contract MEGAMIMovieSBT is ERC721, Ownable {
      */
     function setTokenPrice(uint256 _newPrice) external onlyOwner {
         tokenPrice = _newPrice;
-    }    
+    }
+
+    /**
+     * @dev Set a new address creating a signature used by mint
+     * @param _newAddress New address
+     */
+    function setUriSigner(address _newAddress) external onlyOwner {
+        uriSigner = _newAddress;
+    }
 
     /**
      * @dev Return TokenURI associated to the tokenId
@@ -189,12 +225,12 @@ contract MEGAMIMovieSBT is ERC721, Ownable {
      * @param token IERC20 the token address
      * @param amount uint256 the amount to send
      */
-    function forwardERC20s(IERC20 token, uint256 amount) public onlyOwner {
+    function forwardERC20s(IERC20 token, uint256 amount) external onlyOwner {
         token.transfer(msg.sender, amount);
     }
 
     /**
      * @dev For receiving fund in case someone try to send it.
      */
-    receive() external payable {}    
+    receive() external payable {}
 }

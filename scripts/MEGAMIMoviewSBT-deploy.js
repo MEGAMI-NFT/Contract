@@ -4,6 +4,8 @@ async function main() {
   console.log("Deploying contracts with the account:", deployer.address);
   console.log("Account balance:", (await deployer.getBalance()).toString());
 
+  /*
+
   console.log("Deploying FundManager");
 
   const FundManagerFactory = await ethers.getContractFactory("FundManager");
@@ -11,10 +13,13 @@ async function main() {
 
   console.log("FundManager address:", fundManager.address);
 
+  */
+
   console.log("Deploy MEGAMIMoviewSBT")
 
   const MegamiMovieSbtFactory = await ethers.getContractFactory("MEGAMIMovieSBT");
-  const mmsbt = await MegamiMovieSbtFactory.deploy(fundManager.address);
+  //const mmsbt = await MegamiMovieSbtFactory.deploy(fundManager.address);
+  const mmsbt = await MegamiMovieSbtFactory.deploy('0xf8Fe95e0E7bAf40F76Ab5935B02B92D7853A4793');
 
   console.log("MEGAMIMoviewSBT address:", mmsbt.address);
 
@@ -23,6 +28,7 @@ async function main() {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   await sleep(60000);
 
+  /*
   console.log("Verifying FundManager");
 
   try {
@@ -33,13 +39,15 @@ async function main() {
   } catch (error) {
     console.error(error);
   }
+  */
 
   console.log("Verifying MEGAMIMovieSBT");
 
   try {
     await hre.run("verify:verify", {
         address: mmsbt.address,
-        constructorArguments: [fundManager.address],
+        //constructorArguments: [fundManager.address],
+        constructorArguments: ['0xf8Fe95e0E7bAf40F76Ab5935B02B92D7853A4793'],
     });
   } catch (error) {
     console.error(error);
