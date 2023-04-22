@@ -51,17 +51,17 @@ import "./rarible/royalties/contracts/LibPart.sol";
 import "./rarible/royalties/contracts/LibRoyaltiesV2.sol";
 import "./rarible/royalties/contracts/RoyaltiesV2.sol";
 
-contract NyaronsMEGAMI is ERC1155URIStorage, Ownable, RoyaltiesV2 {
+contract MEGAMIMusic is ERC1155URIStorage, Ownable, RoyaltiesV2 {
 
     /**
      * @dev The name of the token
      */
-    string private _name = "Nyarons-MEGAMI-Collaboration";
+    string private _name = "MEGAMI-MUSIC";
     
     /**
      * @dev The symbol of the token
      */
-    string private _symbol = "NyaronsMEGAMI";
+    string private _symbol = "MEGAMI-MUSIC";
 
     /**
      * @dev The map managing the total supply for each token

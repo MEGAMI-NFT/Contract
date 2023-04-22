@@ -16,12 +16,12 @@ async function main() {
     
     console.log("FundManager address:", fundManagerAddress);
 
-    console.log("Deploy NyaronsMEGAMI")
+    console.log("Deploy MEGAMIMusic")
 
-    const NyaronsFactory = await ethers.getContractFactory("NyaronsMEGAMI");
-    const nyarons = await NyaronsFactory.deploy(fundManagerAddress);
+    const MusicFactory = await ethers.getContractFactory("MEGAMIMusic");
+    const music = await MusicFactory.deploy(fundManagerAddress);
 
-    console.log("NyaronsMEGAMI address:", nyarons.address);
+    console.log("MEGAMIMusic address:", music.address);
   
     // We need to wait until Etherscan create a cache of our contracts
     console.log("Waiting 1 minute for making sure bytecode being cached by etherscan");
@@ -43,11 +43,11 @@ async function main() {
 
     */
 
-    console.log("Verifying NyaronsMEGAMI");
+    console.log("Verifying MEGAMIMusic");
 
     try {
       await hre.run("verify:verify", {
-          address: nyarons.address,
+          address: music.address,
           constructorArguments: [fundManagerAddress],
       });
     } catch (error) {
