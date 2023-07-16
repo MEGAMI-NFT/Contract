@@ -9,8 +9,9 @@
     "test": "hardhat test",
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:coverage": "hardhat coverage",
-    "deploy:rinkeby": "hardhat clean && hardhat run --network rinkeby scripts/MegamiRaffle-deploy.js",
-    "deploy:goerli": "hardhat clean && hardhat run --network goerli scripts/MEGAMIMoviewSBT-deploy.js"
+    "deploy:rinkeby": "hardhat clean && hardhat run --network rinkeby scripts/MEGAMIMovieSBT-deploy.js",
+    "deploy:goerli": "hardhat clean && hardhat run --network goerli scripts/MEGAMIMovieSBT-deploy.js",
+    "deploy:mumbai": "hardhat clean && hardhat run --network mumbai scripts/MEGAMIMovieSBT-deploy.js"
   },
   "repository": {
     "type": "git",
