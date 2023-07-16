@@ -21,7 +21,7 @@ async function main() {
   //const mmsbt = await MegamiMovieSbtFactory.deploy(fundManager.address);
   const mmsbt = await MegamiMovieSbtFactory.deploy('0xf8Fe95e0E7bAf40F76Ab5935B02B92D7853A4793');
 
-  console.log("MEGAMIMoviewSBT address:", mmsbt.address);
+  console.log("MEGAMIMovieSBT address:", mmsbt.address);
 
   // We need to wait until Etherscan create a cache of our contracts
   console.log("Waiting 1 minute for making sure bytecode being cached by etherscan");

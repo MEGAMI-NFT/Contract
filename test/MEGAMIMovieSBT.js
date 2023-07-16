@@ -44,7 +44,9 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);
 
     // mint
-    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    const tx = mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')});
+    await expect(tx).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    await expect(tx).to.emit(mmsbt, 'Locked').withArgs(0);
     
     expect((await mmsbt.totalSupply()).toString()).to.equal("1");
     expect((await mmsbt.nextTokenId()).toString()).to.equal("1");
@@ -105,7 +107,9 @@ describe.only("MEGAMIMovieSBT", function () {
     expect((await mmsbt.nextTokenId()).toString()).to.equal("0");
     
     // mint
-    await expect(mmsbt.connect(owner).teamMint("ipfs://xxxxx/", other.address)).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, other.address, 0);
+    const tx = mmsbt.connect(owner).teamMint("ipfs://xxxxx/", other.address);
+    await expect(tx).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, other.address, 0);
+    await expect(tx).to.emit(mmsbt, 'Locked').withArgs(0);
     
     expect((await mmsbt.totalSupply()).toString()).to.equal("1");
     expect((await mmsbt.nextTokenId()).toString()).to.equal("1");
@@ -167,6 +171,31 @@ describe.only("MEGAMIMovieSBT", function () {
     expect((await mmsbt.nextTokenId()).toString()).to.equal("1");    
   });
 
+  // --- test locked ---
+  it("Minted token should be locked", async function () {
+    expect((await mmsbt.totalSupply()).toString()).to.equal("0");
+    expect((await mmsbt.nextTokenId()).toString()).to.equal("0");
+
+    await expect(mmsbt.connect(owner).setUriSigner(SIGNER_ADDRESS)).to.not.reverted;
+
+    const uri = "ipfs://xxxxx/";
+    const signature = await generateSignature(uri);    
+
+    // mint
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    
+    expect((await mmsbt.totalSupply()).toString()).to.equal("1");
+    expect((await mmsbt.nextTokenId()).toString()).to.equal("1");
+
+    // check if it's locked
+    expect((await mmsbt.locked(0))).to.equal(true);
+  });
+
+  it("Non-existing token shouldn't return lock state", async function () {
+    // check if it's locked
+    await expect(mmsbt.locked(0)).to.be.revertedWith("token doesn't exist");
+  })
+
   // --- test tokenURI ---
   it("token URI must be returned for minted token Id", async function() {
     await expect(mmsbt.connect(owner).setUriSigner(SIGNER_ADDRESS)).to.not.reverted;
@@ -183,6 +212,46 @@ describe.only("MEGAMIMovieSBT", function () {
   it("token URI must be return error for unminted token Id", async function() {
     await expect(mmsbt.tokenURI(10)).to.be.revertedWith("URI query for nonexistent token");
   });
+
+  // --- test setTokenURI ---
+  it("token URI should be able to be changed by owner", async function() {
+    await expect(mmsbt.connect(owner).setUriSigner(SIGNER_ADDRESS)).to.not.reverted;
+
+    const uri = "ipfs://xxxxx/";
+    const signature = await generateSignature(uri);
+
+    // mint
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    
+    expect((await mmsbt.tokenURI(0))).to.equal(uri);
+
+    // Change URI
+    const newUri = "ipfs://yyyyy/";
+    await expect(mmsbt.connect(owner).setTokenURI(0, newUri)).to.not.reverted;
+
+    expect((await mmsbt.tokenURI(0))).to.equal(newUri);
+  });
+
+  it("token URI should not be able to be changed by non-owner", async function() {
+    await expect(mmsbt.connect(owner).setUriSigner(SIGNER_ADDRESS)).to.not.reverted;
+
+    const uri = "ipfs://xxxxx/";
+    const signature = await generateSignature(uri);
+
+    // mint
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    
+    expect((await mmsbt.tokenURI(0))).to.equal(uri);
+
+    // Change URI
+    await expect(mmsbt.connect(other).setTokenURI(0, "ipfs://yyyyy/")).to.be.revertedWith("Ownable: caller is not the owner");
+
+    expect((await mmsbt.tokenURI(0))).to.equal(uri);
+  });
+
+  it("setTokenURI must return error for unminted token Id", async function() {
+    await expect(mmsbt.connect(owner).setTokenURI(0, "ipfs://yyyyy/")).to.be.revertedWith("token doesn't exist");
+  });  
 
   // --- test setTokenPrice ---
   it("token price can be changed by owner", async function() {
@@ -342,5 +411,16 @@ describe.only("MEGAMIMovieSBT", function () {
     // contract's wallet balance shouldn't be changed
     expect((await provider.getBalance(mmsbt.address)).toString()).to.equal(parseEther("100"));
   })
+
+  // --- test supportsInterface
+  it("IERC5192 should be supported", async function() {
+    // IERC5192 
+    expect(await mmsbt.supportsInterface("0xb45a3c0e")).to.equal(true);
+  })  
+
+  it("ERC721 should be supported", async function() {
+    // ERC721 
+    expect(await mmsbt.supportsInterface("0x80ac58cd")).to.equal(true);
+  })    
 
 });

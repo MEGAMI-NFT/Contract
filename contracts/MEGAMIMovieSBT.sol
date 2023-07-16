@@ -42,12 +42,13 @@
 
 pragma solidity ^0.8.7;
 
+import "./interfaces/IERC5192.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-contract MEGAMIMovieSBT is ERC721, Ownable {
+contract MEGAMIMovieSBT is ERC721, IERC5192, Ownable {
     using ECDSA for bytes32;
   
     /**
@@ -110,6 +111,9 @@ contract MEGAMIMovieSBT is ERC721, Ownable {
         tokenURIs[nextTokenId] = _tokenURI;
         _mint(msg.sender, nextTokenId);
 
+        // Notify this token is locked
+        emit Locked(nextTokenId);
+
         unchecked { ++nextTokenId; }
     }
 
@@ -122,6 +126,9 @@ contract MEGAMIMovieSBT is ERC721, Ownable {
 
         tokenURIs[nextTokenId] = _tokenURI;
         _mint(_to, nextTokenId);
+
+        // Notify this token is locked
+        emit Locked(nextTokenId);
 
         unchecked { ++nextTokenId; }
     }    
@@ -136,6 +143,17 @@ contract MEGAMIMovieSBT is ERC721, Ownable {
         unchecked { --totalSupply; }
 
         _burn(_tokenId);
+    }
+
+
+    /**
+     * @dev Return if this token is locked or not. Since this token is SBT, it always returns true.
+     * @param _tokenId The token Id being checked
+     */
+    function locked(uint256 _tokenId) external view returns (bool) {
+        require(_exists(_tokenId), "token doesn't exist");
+
+        return true;
     }
 
     /**
@@ -164,6 +182,17 @@ contract MEGAMIMovieSBT is ERC721, Ownable {
         return tokenURIs[_tokenId];
     }
 
+    /**
+     * @dev Set a new tokenURI to the existing token
+     * @param _tokenId The token Id of the token being updated
+     * @param _tokenURI The token URI being set to the specified token
+     */
+    function setTokenURI(uint256 _tokenId, string calldata _tokenURI) external onlyOwner {
+        require(_exists(_tokenId), "token doesn't exist");
+
+        tokenURIs[_tokenId] = _tokenURI;
+    }
+
     // Make the token soul bound by disabling the setApproval and transfer
 
     function approve(address, uint256) public virtual override {
@@ -174,7 +203,7 @@ contract MEGAMIMovieSBT is ERC721, Ownable {
         revert("SBT isn't transferable");
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256) internal pure override {
+    function _beforeTokenTransfer(address from, address to, uint256, uint256) internal pure override {
         require(from == address(0) || to == address(0), "SBT isn't transferable.");
     }
 
@@ -233,4 +262,19 @@ contract MEGAMIMovieSBT is ERC721, Ownable {
      * @dev For receiving fund in case someone try to send it.
      */
     receive() external payable {}
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) 
+        public 
+        view 
+        virtual 
+        override(ERC721) 
+        returns (bool) 
+    {
+        return 
+            interfaceId == type(IERC5192).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }    
 }
