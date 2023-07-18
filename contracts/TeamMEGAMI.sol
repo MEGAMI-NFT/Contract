@@ -111,7 +111,7 @@ contract TeamMEGAMI is ERC721, Ownable {
         revert("SBT isn't transferable");
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256) internal pure override {
+    function _beforeTokenTransfer(address from, address to, uint256, uint256) internal pure override {
         require(from == address(0) || to == address(0), "SBT isn't transferable.");
     }
 

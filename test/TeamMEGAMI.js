@@ -3,7 +3,7 @@ const { expect, assert } = require("chai");
 const { parseEther } = require('ethers/lib/utils');
 const { waffle } = require("hardhat");
 
-describe.only("TeamMEGAMI", function () {
+describe("TeamMEGAMI", function () {
   beforeEach(async function () {
         [owner, minter, other] = await ethers.getSigners();
 
