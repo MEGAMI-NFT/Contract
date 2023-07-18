@@ -54,7 +54,7 @@ contract MEGAMIMovieSBT is ERC721, IERC5192, Ownable {
     /**
      * @dev Price of the MEGAMIMovieSBT token
      */
-    uint256 public tokenPrice = 0.05 ether;
+    uint256 public tokenPrice = 0.005 ether;
 
     /**
      * @dev Token ID used in the next mint.

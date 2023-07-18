@@ -44,7 +44,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);
 
     // mint
-    const tx = mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')});
+    const tx = mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.005')});
     await expect(tx).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
     await expect(tx).to.emit(mmsbt, 'Locked').withArgs(0);
     
@@ -95,7 +95,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);
 
     // mint
-    await expect(mmsbt.mint(uri, signature, {value: parseEther('0.05')})).to.revertedWith("invalid signer");
+    await expect(mmsbt.mint(uri, signature, {value: parseEther('0.005')})).to.revertedWith("invalid signer");
     
     expect((await mmsbt.totalSupply()).toString()).to.equal("0");
     expect((await mmsbt.nextTokenId()).toString()).to.equal("0");
@@ -137,7 +137,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);    
 
     // mint
-    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.005')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
     
     expect((await mmsbt.totalSupply()).toString()).to.equal("1");
     expect((await mmsbt.nextTokenId()).toString()).to.equal("1");
@@ -159,7 +159,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);
 
     // mint
-    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.005')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
     
     expect((await mmsbt.totalSupply()).toString()).to.equal("1");
     expect((await mmsbt.nextTokenId()).toString()).to.equal("1");
@@ -182,7 +182,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);    
 
     // mint
-    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.005')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
     
     expect((await mmsbt.totalSupply()).toString()).to.equal("1");
     expect((await mmsbt.nextTokenId()).toString()).to.equal("1");
@@ -204,7 +204,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);
 
     // mint
-    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.005')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
     
     expect((await mmsbt.tokenURI(0))).to.equal(uri);
   });
@@ -221,7 +221,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);
 
     // mint
-    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.005')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
     
     expect((await mmsbt.tokenURI(0))).to.equal(uri);
 
@@ -239,7 +239,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);
 
     // mint
-    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.005')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
     
     expect((await mmsbt.tokenURI(0))).to.equal(uri);
 
@@ -255,7 +255,7 @@ describe.only("MEGAMIMovieSBT", function () {
 
   // --- test setTokenPrice ---
   it("token price can be changed by owner", async function() {
-    expect((await mmsbt.tokenPrice())).to.equal(parseEther('0.05')); 
+    expect((await mmsbt.tokenPrice())).to.equal(parseEther('0.005')); 
 
     await expect(mmsbt.connect(owner).setUriSigner(SIGNER_ADDRESS)).to.not.reverted;
 
@@ -263,7 +263,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);    
 
     // mint
-    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.005')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
 
     // change price
     await expect(mmsbt.setTokenPrice(parseEther('0.1'))).to.not.reverted;
@@ -275,12 +275,12 @@ describe.only("MEGAMIMovieSBT", function () {
   });
 
   it("token price must not be changed by non owner", async function() {
-    expect((await mmsbt.tokenPrice())).to.equal(parseEther('0.05')); 
+    expect((await mmsbt.tokenPrice())).to.equal(parseEther('0.005')); 
 
     // change price
     await expect(mmsbt.connect(other).setTokenPrice(parseEther('0.1'))).to.revertedWith("Ownable: caller is not the owner");
     
-    expect((await mmsbt.tokenPrice())).to.equal(parseEther('0.05')); 
+    expect((await mmsbt.tokenPrice())).to.equal(parseEther('0.005')); 
   });  
 
   // --- test setUriSigner ---
@@ -302,7 +302,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);
 
     // mint
-    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.005')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
 
     // approve
     await expect(mmsbt.connect(minter).approve(other.address, 0)).to.revertedWith("SBT isn't transferable");
@@ -316,7 +316,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);
 
     // mint
-    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.005')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
 
     // setApprovalForAll
     await expect(mmsbt.connect(minter).setApprovalForAll(other.address, true)).to.revertedWith("SBT isn't transferable");
@@ -330,7 +330,7 @@ describe.only("MEGAMIMovieSBT", function () {
     const signature = await generateSignature(uri);
 
     // mint
-    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.05')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
+    await expect(mmsbt.connect(minter).mint(uri, signature, {value: parseEther('0.005')})).to.emit(mmsbt, 'Transfer').withArgs(AddressZero, minter.address, 0);
 
     expect((await mmsbt.totalSupply()).toString()).to.equal("1");
 
