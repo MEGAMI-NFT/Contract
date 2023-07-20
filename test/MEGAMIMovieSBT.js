@@ -16,7 +16,7 @@ async function generateSignature(uri) {
   return signature;
 }
 
-describe.only("MEGAMIMovieSBT", function () {
+describe("MEGAMIMovieSBT", function () {
   beforeEach(async function () {
         [owner, seller, minter, other] = await ethers.getSigners();
 
