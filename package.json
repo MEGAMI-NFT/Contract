@@ -9,7 +9,9 @@
     "test": "hardhat test",
     "test:gas": "REPORT_GAS=true hardhat test",
     "test:coverage": "hardhat coverage",
-    "deploy:mumbai": "hardhat clean && hardhat run --network mumbai scripts/MEGAMIFourSeasonsAndFlowers-deploy.js"
+    "deploy:rinkeby": "hardhat clean && hardhat run --network rinkeby scripts/MEGAMICommemoration-deploy.js",
+    "deploy:goerli": "hardhat clean && hardhat run --network goerli scripts/MEGAMICommemoration-deploy.js",
+    "deploy:mumbai": "hardhat clean && hardhat run --network mumbai scripts/MEGAMICommemoration-deploy.js"
   },
   "repository": {
     "type": "git",

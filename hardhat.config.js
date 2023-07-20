@@ -6,6 +6,7 @@ require("@nomiclabs/hardhat-etherscan");
 
 const INFURA_API_KEY = process.env.INFURA_API_KEY;
 const GOERLI_PRIVATE_KEY = process.env.GOERLI_PRIVATE_KEY || "0cddb0e8ba05a84e45c5081775cee5eaff59aecf9e3f7c1e775d4419189d1590";
+const RINKEBY_PRIVATE_KEY = process.env.RINKEBY_PRIVATE_KEY || "0cddb0e8ba05a84e45c5081775cee5eaff59aecf9e3f7c1e775d4419189d1590";
 const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY || "0000000000000000000000000000000000000000000000000000000000000000";
 const MUMBAI_PRIVATE_KEY = process.env.MUMBAI_PRIVATE_KEY || "0000000000000000000000000000000000000000000000000000000000000000";
 const POLYGON_PRIVATE_KEY = process.env.POLYGON_PRIVATE_KEY || "0000000000000000000000000000000000000000000000000000000000000000";
@@ -30,6 +31,10 @@ module.exports = {
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_API_KEY}`,
       accounts: [`${MAINNET_PRIVATE_KEY}`]
+    },
+    rinkeby: {
+      url: `https://rinkeby.infura.io/v3/${INFURA_API_KEY}`,
+      accounts: [`${RINKEBY_PRIVATE_KEY}`]
     },
     goerli: {
       url: `https://goerli.infura.io/v3/${INFURA_API_KEY}`,
